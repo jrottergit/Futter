@@ -1,11 +1,62 @@
 # Futter
 
-Futter soll eine iPhone-taugliche Web-App zum Planen der Werktagsgerichte und Erstellen einer passenden Einkaufsliste werden.
+Abendessen für zwei, ohne langes Überlegen: die nächsten fünf Werktage planen, ein Gericht wählen und die automatisch zusammengeführte Einkaufsliste abhaken.
 
-## Projektstand
+## Erste Version
 
-Das Repository ist aktuell frisch angelegt. Der abgestimmte Produktumfang und die nächsten Entwicklungsschritte stehen in [`docs/PRODUCT_PLAN.md`](docs/PRODUCT_PLAN.md). Es gibt noch keine App-Implementierung und noch keine festgelegte technische Architektur.
+- Fünf Werktage ab heute (Zeitzone Europa/Berlin), freie Tage erlaubt.
+- Acht schnelle Beispielrezepte (15–30 Minuten), überwiegend veggie, inklusive Zutaten und Kochschritten für zwei.
+- Rezeptsuche und Veggie-/Vegan-Filter.
+- Einkaufsliste nach Warengruppe mit Mengenaddition und gespeichertem Abhakstatus. Mehrbedarf setzt das entsprechende Häkchen zurück.
+- Mobile Oberfläche mit Dialogen und einer unteren Navigation.
+- Gemeinsamer Haushalt: Anmeldung mit einem Haushaltspasswort, Session-Cookies, serverseitige SQLite-Speicherung und Aktualisierung auf dem zweiten Gerät innerhalb von etwa zehn Sekunden.
+- Revisionsprüfung verhindert stilles Überschreiben bei gleichzeitigen Änderungen. Eine abgelehnte Auswahl muss mit dem aktuellen Stand erneut vorgenommen werden.
 
-## Ziel
+## Lokal ausprobieren
 
-Eine Woche mit Gerichten für Montag bis Freitag zusammenstellen. Die Einkaufsliste entsteht automatisch aus den Zutaten der ausgewählten Rezepte.
+Node.js ab 22.13 erforderlich (SQLite-Unterstützung).
+
+```sh
+npm ci
+npm run dev
+```
+
+Ohne API startet eine **lokale Vorschau**. Ihr Zustand liegt ausschließlich im Browser, ist nicht geteilt und wird nicht automatisch auf den Server übertragen.
+
+### Gemeinsamen Haushalt lokal starten
+
+`.env.example` nach `.env` kopieren. Ein eigenes Passwort mit mindestens 16 Zeichen und einen zufälligen Session-Schlüssel mit mindestens 32 Zeichen eintragen. Die Datei ist von Git ausgeschlossen. Ein Schlüssel lässt sich mit `node -e "console.log(require('node:crypto').randomBytes(32).toString('hex'))"` erzeugen. Das gleiche Haushaltspasswort gilt für beide Personen.
+
+```sh
+npm run build
+npm start
+```
+
+Die vollständige App läuft dann auf `http://127.0.0.1:8788`. Für Oberflächenentwicklung kann Vite parallel laufen; `/api` wird an Port 8788 weitergeleitet.
+
+## Privater Online-Zugang: vorbereitet, noch nicht bereitgestellt
+
+Für Zugriff über einen Web-Link muss ein HTTPS-Reverse-Proxy vor dem Node-Server stehen. Produktion mit `NODE_ENV=production` starten: Cookies werden dann nur über HTTPS gesendet. Der Server bindet ausschließlich an Loopback; als Proxy wird nur Loopback vertraut. Der Proxy muss den ursprünglichen Host und `X-Forwarded-Proto: https` korrekt übermitteln und eingehende Forwarded-Header überschreiben.
+
+- Sitzungen liegen für diesen einzelnen Haushalt im Arbeitsspeicher. Nach Server-Neustart ist eine erneute Anmeldung nötig; der Plan bleibt in SQLite erhalten.
+- SQLite-Dateien unter `data/` und `.env` dürfen nicht öffentlich ausgeliefert oder ins Git aufgenommen werden. Für den produktiven Betrieb sind persistentes Datenverzeichnis und SQLite-konsistente Backups einzurichten.
+- Anmeldeversuche sind begrenzt; Schreibzugriffe prüfen den Ursprung. Keine öffentliche Registrierung.
+- Offline wird kein gemeinsamer Schreibzugriff vorgetäuscht: fehlgeschlagene Änderungen werden gemeldet und müssen wiederholt werden. Es gibt noch keinen Service Worker für einen Offline-Kaltstart.
+- Manifest und SVG-Icon sind vorhanden. Vollständige iOS-Home-Screen-Icons und Abnahme auf einem echten iPhone stehen aus.
+
+## Prüfungen
+
+```sh
+npm test
+npm run build
+# Einmalig für Browserprüfungen:
+npx playwright install chromium
+# Gegen laufendes npm run dev (frischer Vorschau-Speicher):
+npm run test:browser
+# Startet eine eigene isolierte API und zwei Browser-Sitzungen:
+npm run test:shared
+```
+
+Optional: `FUTTER_CHROMIUM` setzt den Pfad eines vorhandenen Chromium-Browsers. `FUTTER_TEST_URL` ändert die Zieladresse des Vorschautests.
+
+Produktentscheidungen und Ablauf: [docs/PRODUCT_PLAN.md](docs/PRODUCT_PLAN.md).
