@@ -1,5 +1,6 @@
 import express from "express";
 import session from "express-session";
+import memorystore from "memorystore";
 import { rateLimit } from "express-rate-limit";
 import { scryptSync, timingSafeEqual, randomBytes } from "node:crypto";
 import { DatabaseSync } from "node:sqlite";
@@ -58,7 +59,8 @@ export function createApp({ password, secret, dbPath, production = false }) {
   });
   app.use(express.json({ limit: "128kb" }));
   // Ein Prozess/ein Haushalt: Sessions liegen absichtlich nur im RAM und enden bei Server-Neustart.
-  const store = new session.MemoryStore();
+  const MemoryStore = memorystore(session);
+  const store = new MemoryStore({ checkPeriod: 60 * 60 * 1000, max: 100 });
   app.use(
     "/api",
     session({
@@ -161,6 +163,7 @@ export function createApp({ password, secret, dbPath, production = false }) {
   return {
     app,
     close: () => {
+      store.stopInterval();
       store.clear();
       db.close();
     },

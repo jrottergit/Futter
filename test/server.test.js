@@ -87,3 +87,32 @@ test("shared household requires login, blocks CSRF and prevents stale overwrites
     close();
   }
 });
+
+test("production proxy sets secure cookies and validates HTTPS origin", async () => {
+  const { app, close } = createApp({
+    password: "a-test-password-long-enough",
+    secret: "a-test-secret-with-at-least-32-characters",
+    dbPath: ":memory:",
+    production: true,
+  });
+  const server = app.listen(0, "127.0.0.1");
+  await new Promise((r) => server.once("listening", r));
+  const host = `127.0.0.1:${server.address().port}`;
+  try {
+    const response = await fetch(`http://${host}/api/login`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Origin: `https://${host}`,
+        "X-Forwarded-Proto": "https",
+      },
+      body: JSON.stringify({ password: "a-test-password-long-enough" }),
+    });
+    assert.equal(response.status, 200);
+    assert.match(response.headers.get("set-cookie"), /; Secure;/);
+    assert.match(response.headers.get("set-cookie"), /SameSite=Strict/);
+  } finally {
+    await new Promise((r) => server.close(r));
+    close();
+  }
+});

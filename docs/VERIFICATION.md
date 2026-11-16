@@ -7,3 +7,12 @@
 - Mobile Bildschirmaufnahme visuell geprüft: [Vorschau](mobile-preview.png).
 
 Die Tests verwenden isolierte Testdaten, keine echten Haushaltsdaten. Kein echter iPhone-Safari-Test und keine Abnahme eines öffentlich erreichbaren privaten HTTPS-Zugangs. Der lokale Portalversuch bot nur Loopback-Zugriff und gilt nicht als Auslieferung an den Nutzer.
+
+## VPS-Einrichtung
+
+- Isolierte Betriebskopie, privates Environment, automatischer Dienststart und täglicher Backup-Timer eingerichtet.
+- 7/7 Unit-/API-Tests einschließlich Produktionseinstellung für sichere HTTPS-Cookies erfolgreich.
+- Installierter Produktionsdienst: Anmeldung, geschützter Zugriff, Cookie-Attribute und Abmelden über lokale simulierte HTTPS-Proxy-Header geprüft.
+- Erstes SQLite-Backup konsistent erstellt und Integrität geprüft.
+- Bestehende Tailscale-Konfiguration nach Einrichtung identisch zur vorherigen Sicherung.
+- Öffentliche Funnel-Freigabe noch nicht erfolgt: Tailnet benötigt Aktivierung durch den Administrator. Kein externer Erreichbarkeitsnachweis und noch kein ausgelieferter iPhone-Web-Link.

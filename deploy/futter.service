@@ -1,0 +1,19 @@
+[Unit]
+Description=Futter private dinner planner
+After=network.target
+
+[Service]
+Type=simple
+WorkingDirectory=%h/.local/share/futter/app
+EnvironmentFile=%h/.config/futter/server.env
+ExecStart=/home/linuxbrew/.linuxbrew/bin/node server/index.js
+Restart=on-failure
+RestartSec=5
+UMask=0077
+NoNewPrivileges=yes
+PrivateTmp=yes
+ProtectSystem=strict
+ReadWritePaths=%h/.local/share/futter/app/data
+
+[Install]
+WantedBy=default.target
