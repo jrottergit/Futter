@@ -1,0 +1,8 @@
+[Unit]
+Description=Renew Futter short-lived IP certificate
+After=network-online.target nginx.service
+Wants=network-online.target
+
+[Service]
+Type=oneshot
+ExecStart=/opt/futter-certbot/bin/certbot renew --cert-name futter-ip --quiet --no-random-sleep-on-renew

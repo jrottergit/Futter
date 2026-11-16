@@ -36,7 +36,7 @@ Die vollständige App läuft dann auf `http://127.0.0.1:8788`. Für Oberflächen
 
 ## Privater Online-Zugang
 
-Der VPS-Dienst und tägliche Backups sind eingerichtet. Die öffentliche HTTPS-Freigabe über Tailscale Funnel benötigt einmalig die Bestätigung des Tailscale-Administrators. Betriebsanleitung: [deploy/README.md](deploy/README.md).
+Der VPS-Dienst und tägliche Backups sind eingerichtet. Futter ist ohne Tailscale unter **https://169.58.211.254** per gültigem HTTPS-IP-Zertifikat erreichbar. Betriebsanleitung: [deploy/README.md](deploy/README.md).
 
 Für Zugriff über einen Web-Link muss ein HTTPS-Reverse-Proxy vor dem Node-Server stehen. Produktion mit `NODE_ENV=production` starten: Cookies werden dann nur über HTTPS gesendet. Der Server bindet ausschließlich an Loopback; als Proxy wird nur Loopback vertraut. Der Proxy muss den ursprünglichen Host und `X-Forwarded-Proto: https` korrekt übermitteln und eingehende Forwarded-Header überschreiben.
 

@@ -8,25 +8,34 @@
 - `futter.service` bindet nur an `127.0.0.1:8788`. Benutzer-Lingering erlaubt Betrieb unabhängig von einer SSH-Sitzung.
 - Produktion nutzt sichere HTTPS-Cookies. Die Sitzungsspeicherung ist auf 100 Einträge begrenzt und bereinigt abgelaufene Sessions stündlich. Neustarts erfordern erneute Anmeldung, nicht erneute Planung.
 
-## HTTPS ohne Tailscale-App auf den iPhones
+## HTTPS direkt über die öffentliche IP
 
-Die vorhandene Tailscale-Installation kann mit **Funnel** ausschließlich den zusätzlichen HTTPS-Port **10000** veröffentlichen. Der Port 443 mit OpenClaw und die anderen bestehenden Serve-Routen dürfen nicht veröffentlicht oder zurückgesetzt werden.
+Futter ist unter **https://169.58.211.254** erreichbar, ohne Domain und ohne Tailscale auf den Endgeräten.
 
-Vor einer Änderung `tailscale serve status --json` geschützt sichern. Vor Freigabe muss der authentifizierte Server lokal laufen. Die erste Aktivierung von Funnel erfordert die Freigabe des Tailscale-Administrators über den vom CLI ausgegebenen Setup-Link.
+- NGINX bindet ausschließlich an `169.58.211.254:80` und `169.58.211.254:443`. Bestehende Tailscale-Listener bleiben unverändert.
+- HTTP leitet auf HTTPS um, ausgenommen `/.well-known/acme-challenge/` für Zertifikatsvalidierung.
+- Die UFW-Regeln erlauben nur TCP 80/443 auf `eth0` mit Ziel `169.58.211.254`. SSH-Regeln sind unverändert.
+- NGINX leitet nur an den lokalen Futter-Port 8788 weiter und überschreibt die Forwarded-Header. OpenClaw und andere Apps werden nicht öffentlich weitergeleitet.
+- IP-Zertifikat von Let's Encrypt (Profil `shortlived`, rund sechs Tage Gültigkeit), Certbot 5.10 in eigener root-verwalteter Umgebung unter `/opt/futter-certbot`.
+- Zertifikat und privater Schlüssel liegen ausschließlich unter `/etc/letsencrypt/live/futter-ip/` und niemals im Git.
+- `futter-cert-renew.timer` prüft zweimal täglich mit zeitlicher Streuung. Bei Erneuerung prüft der root-eigene Hook `/usr/local/sbin/futter-reload-nginx` die Konfiguration und lädt NGINX neu.
+- Ursprüngliche NGINX- und UFW-Konfiguration wurden unter `/var/backups/futter-setup/` gesichert. Die Tailscale-Funnel-Variante wurde nicht aktiviert.
+
+Vorlagen: `nginx-http.conf`, `nginx-https.conf`, `futter-cert-renew.service`, `futter-cert-renew.timer`, `reload-nginx.sh`.
 
 ```sh
-tailscale funnel --bg --https=10000 --yes http://127.0.0.1:8788
-tailscale serve status --json
-tailscale funnel status
+sudo nginx -t
+sudo systemctl status nginx futter-cert-renew.timer
+sudo /opt/futter-certbot/bin/certbot certificates --cert-name futter-ip
+sudo /opt/futter-certbot/bin/certbot renew --cert-name futter-ip --dry-run --run-deploy-hooks --no-random-sleep-on-renew
 ```
 
-Danach prüfen: nur der neue Host:Port steht in `AllowFunnel`; die bestehenden TCP/Web-Einträge sind unverändert. Keine Verwendung von `serve reset` oder `funnel reset`, da sie andere Apps beeinträchtigen können.
+Ein Wechsel von einem NGINX-Wildcard-Listener auf eine bestimmte lokale IP benötigt gegebenenfalls einen Neustart statt nur Reload, da der alte Listener die neue Bindung blockiert. Nach jeder Listener-Änderung `ss -ltn` und die wirklichen HTTP-Antworten prüfen; ein erfolgreicher `nginx -t` allein beweist keine übernommene Konfiguration.
 
-Einzelne Futter-Freigabe deaktivieren:
+## Relevante Let’s-Encrypt-Dokumentation
 
-```sh
-tailscale funnel --https=10000 off
-```
+- https://letsencrypt.org/2026/03/11/shorter-certs-certbot/
+- IP-Zertifikate werden über `certonly --webroot --required-profile shortlived --ip-address IP` bezogen; NGINX liest die Dateien explizit. Vor erster Produktion wurde der Ablauf gegen Staging geprüft.
 
 ## Systemd und Updates
 
@@ -56,5 +65,5 @@ Zum Wiederherstellen den Dienst stoppen, das gesamte bisherige Datenverzeichnis 
 2. Anmeldung über echten HTTPS-Link setzt `Secure`, `HttpOnly`, `SameSite=Strict`.
 3. Anmeldung/Plan auf zwei getrennten Browser-Sitzungen prüfen; anschließend abmelden.
 4. Fremde Origin und veraltete Revision weiterhin abweisen.
-5. Bestehende Serve-Routen mit der Sicherung vergleichen.
+5. Bestehende Tailscale-Serve-Routen mit der Sicherung vergleichen.
 6. Nutzer öffnet den Link auf dem eigenen iPhone; ein VPS-Browsertest ersetzt diese Abnahme nicht.
