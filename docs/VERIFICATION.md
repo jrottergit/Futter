@@ -27,3 +27,13 @@ Die Tests verwenden isolierte Testdaten, keine echten Haushaltsdaten. Kein echte
 - Browserprüfung über die HTTPS-IP ohne deaktivierte Zertifikatsprüfung: Anmeldung in zwei getrennten Sitzungen, Secure-/HttpOnly-/SameSite-Cookies, Gerichteauswahl, 300 g Feta aus zwei Rezepten, geteilter Abhakstatus, Persistenz nach Neuladen, mobile Breite und Abmelden erfolgreich. Testplan anschließend revisionsgeprüft wieder geleert.
 - Abschließendes HTTPS-GET: 200, TLS-Prüfergebnis 0; geschützte API ohne Anmeldung: 401.
 - Echter iPhone-Safari-Test und Bestätigung vom Nutzergerät stehen weiterhin aus. Der VPS-Browsertest allein beweist nicht die Auslieferung an dieses Endgerät.
+
+## Erweiterungen: Tageswechsel, manuelle Artikel, Zutaten und Snacks
+
+- 13/13 Kern-/API-Tests erfolgreich; Produktionsbuild erfolgreich.
+- Legacy-Migration v1/v2 nach v3, Datum einschließlich Sommer-/Winterzeit, Entfernen vergangener Gerichte, serverseitige Bereinigung, Ablehnung veralteter Schreibstände und Zutatenvalidierung geprüft.
+- Isolierter Zwei-Geräte-Browserlauf: manuelle Artikel hinzufügen, Kategorie ändern, abhaken, löschen und Text sicher darstellen; Tageswechsel Freitag→Samstag sowie Samstag→Sonntag bei unverändertem Werktagsfenster geprüft.
+- Separater Browserlauf: vier neue Gerichte, Asia-Rezept mit zwei Zutaten, keine Kochanleitung, Zutaten ändern/ergänzen/entfernen, gemeinsame Persistenz und aktualisierte Einkaufsmengen, Snack-Auswahl und Kategorien geprüft. Frei editierte HTML-artige Zutatennamen werden als Text dargestellt, nicht als HTML ausgeführt.
+- Mobile Breiten 320/390 px ohne horizontalen Überlauf geprüft.
+- Vor jeder Live-Migration konsistente Datenbank- und Code-Sicherungen erstellt. Migrierter Inhalt entspricht exakt dem vorab berechneten Zielzustand; SQLite-Integrität erfolgreich geprüft.
+- Live-HTTPS-Browserprüfung nach Veröffentlichung: Anmeldung, fünf Tage, manuelles Formular und Kategorien, alle sechs Snack-Optionen, zwölf Rezeptkarten und Zutateneditor, anschließend Abmelden. Keine Schreibtests an echten Haushaltsdaten.

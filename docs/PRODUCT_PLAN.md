@@ -37,7 +37,7 @@ flowchart LR
 - **Haushalt:** gemeinsamer Datenbereich für zwei Personen; keine privaten Haushaltsdaten im öffentlichen Git-Repository.
 - **Einkaufsliste:** aus dem gewählten Fünf-Tage-Zeitraum abgeleitet. Zeitraum und Abhakstatus müssen zusammen gespeichert werden; beim Weiterrücken des Zeitraums dürfen erledigte Artikel nicht unbemerkt für einen neuen Einkauf gelten.
 
-Die Einkaufsliste soll abgeleitet sein und nicht als zweite, unabhängig gepflegte Zutatenkopie auseinanderlaufen. Manuell ergänzte Einkaufsartikel können später ergänzt werden, gehören aber nicht zum zwingenden ersten Kernablauf.
+Die Einkaufsliste soll abgeleitet sein und nicht als zweite, unabhängig gepflegte Zutatenkopie auseinanderlaufen. Manuelle Einkaufsartikel sind enthalten: freier Name, Kategorie, Abhakstatus und Löschfunktion. Offene Artikel bleiben über Tageswechsel erhalten; abgehakte Artikel werden am Folgetag entfernt.
 
 ## Nicht-Ziele für den MVP
 
@@ -93,3 +93,11 @@ Plan, Rezeptdetails, Einkaufsliste, lokale Vorschau und privater gemeinsamer Ser
 3. **Einkauf:** oben der Zeitraum und die Zahl offener Artikel, darunter Zutaten nach Warengruppe mit Mengen und großen Abhakflächen. Änderungen am Plan aktualisieren die Liste automatisch.
 
 Keine zusätzlichen Bestätigungsdialoge bei jeder normalen Auswahl. Datum, Zeitraum und Speicher-/Synchronisationsstatus sollen eindeutig sein.
+
+## Ergänzungen vom 17.11.2026 (umgesetzt)
+
+- Automatische Tagesbereinigung nach Berliner Datum, auch wenn kein Gerät die App geöffnet hat. Vergangene Planeinträge werden entfernt; Rezepte selbst bleiben bestehen.
+- Manuelle Einkaufsartikel mit frei eingegebenem Text und auswählbarer Kategorie. Kategorien können nachträglich geändert werden.
+- Rezepte ohne Kochanleitung, mit gemeinsam editierbaren Zutaten, Mengen, Einheiten und Kategorien.
+- Vier neue Gerichte: Griechischer Salat, Linsensalat, Hummus-Pilz-Schinken Baguette und Asia-Rote Linsen. Bei Letzterem genau eine Tüte Asiagemüse mit Kokos und eine Packung rote Linsen.
+- „🚨 SNAAACKS!“ öffnet eine Mehrfachauswahl für Kekse, Schokobons, Chips, Nüsse, Schoki und Salat; Auswahl ergänzt manuelle Einkaufsartikel.

@@ -4,13 +4,24 @@ import memorystore from "memorystore";
 import { rateLimit } from "express-rate-limit";
 import { scryptSync, scrypt, timingSafeEqual, randomBytes } from "node:crypto";
 import { DatabaseSync } from "node:sqlite";
-import { validateState, emptyState } from "../src/core.js";
+import {
+  validateState,
+  emptyState,
+  cleanState,
+  localDate,
+} from "../src/core.js";
 import path from "node:path";
 import { promisify } from "node:util";
 const derivePassword = promisify(scrypt);
 import { fileURLToPath } from "node:url";
 
-export function createApp({ password, secret, dbPath, production = false }) {
+export function createApp({
+  password,
+  secret,
+  dbPath,
+  production = false,
+  today = () => localDate(),
+}) {
   if (!password || password.length < 16)
     throw new Error("FUTTER_PASSWORD muss mindestens 16 Zeichen haben.");
   if (!secret || secret.length < 32)
@@ -28,8 +39,19 @@ export function createApp({ password, secret, dbPath, production = false }) {
     const row = db
       .prepare("SELECT revision,state FROM household WHERE id=1")
       .get();
-    return { revision: row.revision, state: JSON.parse(row.state) };
+    const state = cleanState(validateState(JSON.parse(row.state)), today());
+    const serialized = JSON.stringify(state);
+    if (serialized !== row.state) {
+      db.prepare(
+        "UPDATE household SET revision=revision+1,state=? WHERE id=1 AND revision=?",
+      ).run(serialized, row.revision);
+      row.revision++;
+    }
+    return { revision: row.revision, state, today: today() };
   };
+  snapshot();
+  const cleanupTimer = setInterval(snapshot, 60000);
+  cleanupTimer.unref();
   const app = express();
   app.disable("x-powered-by");
   if (production) app.set("trust proxy", "loopback");
@@ -142,9 +164,25 @@ export function createApp({ password, secret, dbPath, production = false }) {
   );
   app.get("/api/state", (req, res) => res.json(snapshot()));
   app.put("/api/state", (req, res) => {
+    const current = snapshot();
+    if ([1, 2].includes(req.body?.state?.version))
+      return res
+        .status(409)
+        .json({ ...current, error: "Bitte die App neu laden." });
     let state;
     try {
-      state = validateState(req.body?.state);
+      state = cleanState(validateState(req.body?.state), today());
+      const existing = new Map(
+        current.state.manualItems.map((item) => [item.id, item]),
+      );
+      state.manualItems = state.manualItems.map((item) => ({
+        ...item,
+        checkedOn:
+          item.checkedOn === null
+            ? null
+            : existing.get(item.id)?.checkedOn || today(),
+      }));
+      state = cleanState(state, today());
       if (!Number.isSafeInteger(req.body.revision) || req.body.revision < 0)
         throw new Error("Ungültige Revision");
     } catch (error) {
@@ -182,6 +220,7 @@ export function createApp({ password, secret, dbPath, production = false }) {
   return {
     app,
     close: () => {
+      clearInterval(cleanupTimer);
       store.stopInterval();
       store.clear();
       db.close();

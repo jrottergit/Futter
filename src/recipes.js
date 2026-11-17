@@ -26,12 +26,6 @@ export const recipes = [
       dry("Salz", null, "nach Bedarf"),
       dry("Pfeffer", null, "nach Bedarf"),
     ],
-    steps: [
-      "Pasta in Salzwasser nach Packungsangabe kochen. Eine Tasse Nudelwasser aufheben.",
-      "Zwiebel und Knoblauch fein schneiden und im Öl bei mittlerer Hitze anschwitzen.",
-      "Tomaten zugeben und 8 Minuten köcheln. Frischkäse einrühren.",
-      "Pasta mit der Sauce und etwas Nudelwasser mischen. Abschmecken und mit Parmesan servieren.",
-    ],
   },
   {
     id: "chickpea-curry",
@@ -51,12 +45,6 @@ export const recipes = [
       dry("Olivenöl", 1, "EL"),
       dry("Salz", null, "nach Bedarf"),
     ],
-    steps: [
-      "Reis nach Packungsangabe garen. Kichererbsen abgießen. Zwiebel und Paprika würfeln.",
-      "Zwiebel und Paprika in Öl 5 Minuten anbraten, Curry kurz mitrösten.",
-      "Kokosmilch, Kichererbsen und Spinat zugeben. 10 Minuten sanft köcheln, bis der Spinat heiß ist.",
-      "Mit Salz abschmecken und auf dem Reis servieren.",
-    ],
   },
   {
     id: "gnocchi",
@@ -73,12 +61,6 @@ export const recipes = [
       dry("Olivenöl", 1, "EL"),
       dry("Salz", null, "nach Bedarf"),
       dry("Pfeffer", null, "nach Bedarf"),
-    ],
-    steps: [
-      "Zucchini würfeln, Tomaten halbieren.",
-      "Gnocchi im Öl nach Packungsangabe goldbraun braten. Herausnehmen.",
-      "Zucchini 5 Minuten braten, Tomaten zugeben und 3 Minuten weitergaren.",
-      "Gnocchi untermischen, Feta darüberbröseln und abschmecken.",
     ],
   },
   {
@@ -99,12 +81,6 @@ export const recipes = [
       dry("Paprikapulver", 1, "TL"),
       dry("Salz", null, "nach Bedarf"),
     ],
-    steps: [
-      "Bohnen und Mais abgießen. Paprika fein würfeln.",
-      "Paprika im Öl anbraten, Bohnen und Mais dazugeben. Mit Paprikapulver und Salz würzen.",
-      "Füllung und Käse auf je eine Hälfte der Wraps geben, zuklappen.",
-      "In einer trockenen Pfanne auf beiden Seiten bei mittlerer Hitze knusprig braten. Mit Joghurt servieren.",
-    ],
   },
   {
     id: "couscous",
@@ -124,12 +100,6 @@ export const recipes = [
       dry("Salz", null, "nach Bedarf"),
       dry("Pfeffer", null, "nach Bedarf"),
     ],
-    steps: [
-      "Couscous nach Packungsangabe mit heißem Wasser quellen lassen.",
-      "Gurke und Tomaten klein schneiden, Kichererbsen abgießen.",
-      "Zitrone auspressen. Saft mit Öl, Salz und Pfeffer verrühren.",
-      "Alles mischen und den Feta darüberbröseln.",
-    ],
   },
   {
     id: "peanut-noodles",
@@ -145,12 +115,6 @@ export const recipes = [
       dry("Erdnussmus", 3, "EL"),
       dry("Sojasauce", 2, "EL"),
       veg("Limette", 1),
-    ],
-    steps: [
-      "Brokkoli in kleine Röschen teilen, Karotten in dünne Streifen schneiden.",
-      "Nudeln nach Packungsangabe garen. Gemüse die letzten 4 Minuten mitgaren oder separat bissfest kochen.",
-      "Erdnussmus, Sojasauce und Limettensaft mit etwas heißem Kochwasser glatt rühren.",
-      "Nudeln und Gemüse mit der Sauce mischen, bei Bedarf mehr Kochwasser zugeben.",
     ],
   },
   {
@@ -171,12 +135,6 @@ export const recipes = [
       dry("Paprikapulver", 1, "TL"),
       dry("Salz", null, "nach Bedarf"),
     ],
-    steps: [
-      "Zwiebel, Knoblauch und Paprika schneiden und in Öl 5 Minuten anbraten.",
-      "Tomaten, Paprikapulver und Salz zugeben. 8 Minuten köcheln.",
-      "Vier Mulden formen und Eier hineingeben. Zugedeckt garen, bis Eiweiß und Eigelb vollständig gestockt sind.",
-      "Mit Brot servieren.",
-    ],
   },
   {
     id: "lemon-chicken",
@@ -195,11 +153,65 @@ export const recipes = [
       dry("Salz", null, "nach Bedarf"),
       dry("Pfeffer", null, "nach Bedarf"),
     ],
-    steps: [
-      "Reis nach Packungsangabe garen. Zucchini und Hähnchen auf getrennten Brettern würfeln.",
-      "Hähnchen in Öl gründlich durchbraten (mindestens 75 °C Kerntemperatur), herausnehmen.",
-      "Zucchini 5 Minuten anbraten. Hähnchen und etwas Zitronensaft zugeben, würzen.",
-      "Mit Reis und Joghurt servieren.",
+  },
+  {
+    id: "greek-salad",
+    name: "Griechischer Salat",
+    minutes: 15,
+    tag: "Vegetarisch",
+    art: "green",
+    ingredients: [
+      veg("Gurke", 0.5),
+      veg("Tomaten", 300, "g"),
+      veg("Paprika", 1),
+      veg("Rote Zwiebel", 0.5),
+      cold("Feta", 150),
+      dry("Oliven", 80),
+      dry("Olivenöl", 2, "EL"),
+      dry("Essig", 1, "EL"),
+      dry("Salz", null, "nach Bedarf"),
+    ],
+  },
+  {
+    id: "lentil-salad",
+    name: "Linsensalat",
+    minutes: 25,
+    tag: "Vegetarisch",
+    art: "green",
+    ingredients: [
+      dry("Linsen", 150),
+      veg("Paprika", 1),
+      veg("Gurke", 0.5),
+      veg("Tomaten", 200, "g"),
+      cold("Feta", 100),
+      veg("Zitrone", 1),
+      dry("Olivenöl", 2, "EL"),
+      dry("Salz", null, "nach Bedarf"),
+    ],
+  },
+  {
+    id: "hummus-baguette",
+    name: "Hummus-Pilz-Schinken Baguette",
+    minutes: 20,
+    tag: "Mit Fleisch",
+    art: "corn",
+    ingredients: [
+      ingredient("Baguette", 1, "Stück", "Brot & Backwaren"),
+      cold("Hummus", 150),
+      veg("Champignons", 200, "g"),
+      cold("Schinken", 100),
+      dry("Olivenöl", 1, "EL"),
+    ],
+  },
+  {
+    id: "asia-lentils",
+    name: "Asia-Rote Linsen",
+    minutes: 20,
+    tag: "Vegan",
+    art: "curry",
+    ingredients: [
+      ingredient("Asiagemüse mit Kokos", 1, "Tüte", "Tiefkühl"),
+      dry("Rote Linsen", 1, "Packung"),
     ],
   },
 ];

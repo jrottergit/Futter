@@ -45,7 +45,7 @@ try {
   await page.getByRole("searchbox").fill("Erdnuss");
   assert.equal(await page.locator(".recipe-card").count(), 1);
   await page.locator(".recipe-card").click();
-  await page.getByRole("heading", { name: "Zubereitung" }).waitFor();
+  await page.getByRole("heading", { name: "Zutaten" }).waitFor();
   assert(
     await page
       .locator("dialog")

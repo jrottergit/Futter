@@ -5,7 +5,7 @@ Abendessen für zwei, ohne langes Überlegen: die nächsten fünf Werktage plane
 ## Erste Version
 
 - Fünf Werktage ab heute (Zeitzone Europa/Berlin), freie Tage erlaubt.
-- Acht schnelle Beispielrezepte (15–30 Minuten), überwiegend veggie, inklusive Zutaten und Kochschritten für zwei.
+- Zwölf schnelle Rezepte, überwiegend veggie, mit editierbaren Zutaten für zwei Personen; ohne Kochanleitungen.
 - Rezeptsuche und Veggie-/Vegan-Filter.
 - Einkaufsliste nach Warengruppe mit Mengenaddition und gespeichertem Abhakstatus. Mehrbedarf setzt das entsprechende Häkchen zurück.
 - Mobile Oberfläche mit Dialogen und einer unteren Navigation.
@@ -66,3 +66,15 @@ Produktentscheidungen und Ablauf: [docs/PRODUCT_PLAN.md](docs/PRODUCT_PLAN.md).
 Der produktive Systemdienst läuft unter einem eigenen eingeschränkten Benutzer, mit root-eigenem Code und geschütztem Home-Verzeichnis. Passwortprüfungen laufen asynchron und mit begrenzter Parallelität.
 
 Aktueller Sicherheitsstand und verbleibende Punkte: [docs/SECURITY.md](docs/SECURITY.md).
+
+## Tageswechsel, eigene Artikel und Rezeptzutaten
+
+- Berliner Datum: vergangene Planeinträge werden beim Start, auf API-Zugriff und spätestens beim minütlichen Serverlauf entfernt. Die Oberfläche aktualisiert sich regelmäßig sowie beim Zurückkehren in den Tab.
+- Zutaten für vergangene Gerichte verschwinden aus der abgeleiteten Einkaufsliste, soweit sie nicht weiterhin gebraucht werden. Der Rezeptkatalog wird nicht gelöscht.
+- Manuelle Artikel: freie Texte und Kategorien, nachträgliches Umkategorisieren, Abhaken und Löschen. Offene Artikel bleiben erhalten; am Vortag oder früher gekaufte Artikel werden entfernt (auch am Wochenende).
+- Zutaten pro Rezept können geändert, ergänzt und entfernt werden. Mengenänderungen aktualisieren die Einkaufsliste. Bestehende Häkchen für geänderte Mengen werden nicht blind übernommen.
+- Einkaufsliste: „🚨 SNAAACKS!“ mit Keksen, Schokobons, Chips, Nüssen, Schoki und Salat. Noch offene gleiche Snack-Einträge werden nicht doppelt ergänzt.
+- Neu im Katalog: Griechischer Salat, Linsensalat, Hummus-Pilz-Schinken Baguette, Asia-Rote Linsen. Für Asia-Rote Linsen sind genau eine Tüte Asiagemüse mit Kokos und eine Packung rote Linsen hinterlegt.
+- Gespeicherte Formate v1/v2 werden kontrolliert nach v3 übernommen. Veraltete Schreibzugriffe werden mit 409 abgewiesen, damit ältere Browser keine neuen Felder überschreiben. Nach dem Update die Seite neu laden.
+
+Zusätzliche isolierte Browserprüfungen: `npm run test:calendar` und `npm run test:recipes`. Diese starten eigene Datenbanken und verändern keine Haushaltsdaten.

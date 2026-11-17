@@ -9,3 +9,5 @@
 - Use targeted tests. Live acceptance must not overwrite real meal plans; use isolated databases for write tests.
 
 - Product copy: this is a private utility for a couple, not a marketing site. Use concise functional labels. No slogans, promotional hero sections, decorative taglines or redundant explanatory copy.
+
+- Persisted schema is v3: preserve manualItems and ingredientOverrides. Read migrations may accept v1/v2, but stale writers must not silently drop new fields. Day rollover uses Europe/Berlin; retain open manual items, remove checked ones only on a later day. Never render editable ingredient text as raw HTML.

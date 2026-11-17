@@ -9,6 +9,12 @@ import {
   checkKey,
   setDish,
   validateState,
+  cleanState,
+  categories,
+  isChecked,
+  toggleItem,
+  getRecipe,
+  units,
 } from "./core.js";
 const root = document.querySelector("#app");
 const STORAGE = "futter-preview-v1";
@@ -22,6 +28,12 @@ let state = emptyState(),
   search = "",
   filter = "Alle",
   selection = null;
+let displayedToday = localDate();
+let editingRecipeId = null,
+  ingredientDraft = [];
+const snacks = ["Kekse", "Schokobons", "Chips", "Nüsse", "Schoki", "Salat"];
+let manualName = "",
+  manualCategory = "Sonstiges";
 const esc = (s) =>
   String(s).replace(
     /[&<>"']/g,
@@ -77,21 +89,17 @@ function render() {
  ]
    .map(
      ([id, label]) =>
-       `<button data-tab="${id}" ${tab === id ? 'aria-current="page"' : ""}><span aria-hidden="true">${icon(id)}</span>${label}${id === "shopping" && items.length ? `<small>${items.filter((i) => !state.checked.includes(checkKey(i, dates))).length}</small>` : ""}</button>`,
+       `<button data-tab="${id}" ${tab === id ? 'aria-current="page"' : ""}><span aria-hidden="true">${icon(id)}</span>${label}${id === "shopping" && items.length ? `<small>${items.filter((i) => !isChecked(state, i, dates)).length}</small>` : ""}</button>`,
    )
-   .join(
-     "",
-   )}</nav></div><dialog id="recipe-dialog"></dialog>`;
+   .join("")}</nav></div><dialog id="recipe-dialog"></dialog>`;
 }
 function renderPlan(count) {
   return `<section class="intro"><p class="eyebrow">${esc(range())} · NUR WERKTAGS</p><h1>Essensplan</h1><p>Abendessen für 2 Personen</p></section><div class="section-heading"><h2>Nächste fünf Werktage</h2><span>${count} von 5 geplant</span></div><div class="days">${dates
     .map((d) => {
-      const r = recipeById[state.plan[d]];
+      const r = getRecipe(state.plan[d], state);
       return `<article class="day ${r ? "filled" : ""}"><div class="day-date"><strong>${dateLabel(d, { weekday: "short" }).replace(".", "")}</strong><span>${dateLabel(d, { day: "2-digit", month: "2-digit" })}</span>${d === localDate() ? "<small>HEUTE</small>" : ""}</div><div class="day-content">${r ? `<button class="dish-name" data-detail="${r.id}">${esc(r.name)}</button><p>${r.minutes} Min. <span>·</span> ${r.tag} <span>·</span> Für 2</p><div class="day-actions"><button class="text-button" data-choose="${d}">Wechseln</button><button class="text-button muted" data-remove="${d}" aria-label="Gericht am ${d} entfernen">Entfernen</button></div>` : `<button class="add-dish" data-choose="${d}">＋ Gericht wählen</button>`}</div>${r ? `<div class="mini-art ${r.art}" aria-hidden="true">✳</div>` : ""}</article>`;
     })
-    .join(
-      "",
-    )}</div>`;
+    .join("")}</div>`;
 }
 function renderRecipes() {
   const list = recipes.filter(
@@ -104,10 +112,8 @@ function renderRecipes() {
 }
 function renderShopping(items) {
   const groups = [...new Set(items.map((i) => i.category))],
-    done = items.filter((i) =>
-      state.checked.includes(checkKey(i, dates)),
-    ).length;
-  return `<section class="intro"><p class="eyebrow">${esc(range())} · FÜR ZWEI</p><h1>Einkaufsliste</h1><p>${items.length ? `${items.length - done} offen · ${done} erledigt` : "Noch keine Gerichte ausgewählt."}</p></section>${
+    done = items.filter((i) => isChecked(state, i, dates)).length;
+  return `<section class="intro"><p class="eyebrow">${esc(range())} · FÜR ZWEI</p><h1>Einkaufsliste</h1><button type="button" class="snack-button" data-action="snacks"><span aria-hidden="true">🚨</span> SNAAACKS!</button><p>${items.length ? `${items.length - done} offen · ${done} erledigt` : "Noch keine Artikel."}</p></section><form id="manual-form" class="manual-form"><div class="manual-field"><label for="manual-name">Artikel</label><input id="manual-name" name="name" maxlength="160" required placeholder="z. B. Kaffee" value="${esc(manualName)}" ${busy ? "disabled" : ""}></div><div class="manual-field"><label for="manual-category">Kategorie</label><select id="manual-category" name="category" ${busy ? "disabled" : ""}>${categories.map((c) => `<option ${c === manualCategory ? "selected" : ""}>${esc(c)}</option>`).join("")}</select></div><button class="primary" ${busy ? "disabled" : ""}>Hinzufügen</button></form>${
     items.length
       ? `<div class="shopping-groups">${groups
           .map(
@@ -116,14 +122,12 @@ function renderShopping(items) {
                 .filter((i) => i.category === g)
                 .map((i) => {
                   const key = checkKey(i, dates),
-                    checked = state.checked.includes(key);
-                  return `<label class="shopping-row ${checked ? "done" : ""}"><input type="checkbox" data-check="${esc(key)}" ${checked ? "checked" : ""} ${busy ? "disabled" : ""}><span>${esc(i.name)}</span><strong>${quantityLabel(i)}</strong></label>`;
+                    checked = isChecked(state, i, dates);
+                  return `<div class="shopping-entry"><label class="shopping-row ${checked ? "done" : ""}"><input type="checkbox" data-item="${esc(i.key)}" ${checked ? "checked" : ""} ${busy ? "disabled" : ""}><span>${esc(i.name)}</span><strong>${quantityLabel(i)}</strong></label>${i.manualId ? `<div class="manual-actions"><select data-manual-category="${i.manualId}" aria-label="Kategorie für ${esc(i.name)}" ${busy ? "disabled" : ""}>${categories.map((c) => `<option ${c === i.category ? "selected" : ""}>${esc(c)}</option>`).join("")}</select><button class="text-button" data-manual-delete="${i.manualId}" aria-label="${esc(i.name)} löschen" ${busy ? "disabled" : ""}>Löschen</button></div>` : ""}</div>`;
                 })
                 .join("")}</section>`,
           )
-          .join(
-            "",
-          )}</div>`
+          .join("")}</div>`
       : '<div class="empty-shopping"><h2>Keine Artikel</h2><p>Wählt ein Gericht im Plan aus.</p><button class="primary" data-tab="plan">Gerichte planen →</button></div>'
   }`;
 }
@@ -140,14 +144,41 @@ function openDialog(html) {
   dialog.showModal();
 }
 function detail(id) {
-  const r = recipeById[id];
+  const r = getRecipe(id, state);
   selection = null;
   openDialog(
-    `<p class="eyebrow">${r.minutes} MIN. · ${r.tag.toUpperCase()} · FÜR 2</p><h2>${r.name}</h2><h3>Zutaten</h3><ul class="ingredients">${r.ingredients.map((i) => `<li><span>${i.name}</span><strong>${quantityLabel(i)}</strong></li>`).join("")}</ul><h3>Zubereitung</h3><ol class="steps">${r.steps.map((s) => `<li>${s}</li>`).join("")}</ol><label class="date-select">Tag<select id="target-day">${dates.map((d) => `<option value="${d}">${dateLabel(d, { weekday: "long", day: "numeric", month: "short" })}${state.plan[d] ? " · belegt" : ""}</option>`).join("")}</select></label><button class="primary full" data-pick="${r.id}">Für diesen Tag einplanen →</button>`,
+    `<p class="eyebrow">${r.minutes} MIN. · ${r.tag.toUpperCase()} · FÜR 2</p><h2>${r.name}</h2><h3>Zutaten</h3><ul class="ingredients">${r.ingredients.map((i) => `<li><span>${esc(i.name)}</span><strong>${quantityLabel(i)}</strong></li>`).join("")}</ul><button class="secondary-button" data-edit-recipe="${r.id}">Zutaten bearbeiten</button><label class="date-select">Tag<select id="target-day">${dates.map((d) => `<option value="${d}">${dateLabel(d, { weekday: "long", day: "numeric", month: "short" })}${state.plan[d] ? " · belegt" : ""}</option>`).join("")}</select></label><button class="primary full" data-pick="${r.id}">Für diesen Tag einplanen →</button>`,
   );
+}
+function editIngredients(id, preserve = false) {
+  editingRecipeId = id;
+  if (!preserve)
+    ingredientDraft = getRecipe(id, state).ingredients.map((i) => ({
+      ...i,
+      quantity: i.quantity === null ? "" : String(i.quantity),
+    }));
+  openDialog(
+    `<h2>Zutaten bearbeiten</h2><p>${esc(recipeById[id].name)} · Für 2 Personen</p><form id="ingredient-form"><div class="ingredient-editor">${ingredientDraft.map((i, index) => `<fieldset><legend>Zutat ${index + 1}</legend><label for="ingredient-name-${index}">Name</label><input id="ingredient-name-${index}" data-ingredient="${index}" data-field="name" maxlength="100" value="${esc(i.name)}" required><div class="ingredient-amount"><label>Menge<input aria-label="Menge ${index + 1}" data-ingredient="${index}" data-field="quantity" inputmode="decimal" value="${esc(i.quantity)}" ${i.unit === "nach Bedarf" ? "disabled" : "required"}></label><label for="ingredient-unit-${index}">Einheit</label><select id="ingredient-unit-${index}" data-ingredient="${index}" data-field="unit">${units.map((u) => `<option ${u === i.unit ? "selected" : ""}>${esc(u)}</option>`).join("")}</select></div><label for="ingredient-category-${index}">Kategorie</label><select id="ingredient-category-${index}" data-ingredient="${index}" data-field="category">${categories.map((c) => `<option ${c === i.category ? "selected" : ""}>${esc(c)}</option>`).join("")}</select><button type="button" class="text-button" data-remove-ingredient="${index}" ${ingredientDraft.length === 1 ? "disabled" : ""}>Zutat entfernen</button></fieldset>`).join("")}</div><button type="button" class="secondary-button" data-action="add-ingredient" ${ingredientDraft.length >= 40 ? "disabled" : ""}>Zutat hinzufügen</button><p id="ingredient-error" role="alert">${esc(message)}</p><button class="primary full">Zutaten speichern</button></form>`,
+  );
+}
+function openSnacks() {
+  openDialog(
+    `<h2>🚨 SNAAACKS!</h2><form id="snack-form"><div class="snack-options">${snacks.map((name, index) => `<label><input type="checkbox" name="snack" value="${index}"><span>${name}</span></label>`).join("")}</div><p id="snack-error" role="alert"></p><button class="primary full">Zur Einkaufsliste hinzufügen</button></form>`,
+  );
+}
+function captureIngredient(target) {
+  if (target.dataset.ingredient === undefined) return;
+  const row = ingredientDraft[Number(target.dataset.ingredient)];
+  if (!row) return;
+  row[target.dataset.field] = target.value;
+  if (target.dataset.field === "unit") {
+    if (target.value === "nach Bedarf") row.quantity = "";
+    editIngredients(editingRecipeId, true);
+  }
 }
 async function change(next) {
   if (busy) return;
+  next = cleanState(next);
   busy = true;
   message = "";
   if (mode === "preview") {
@@ -171,13 +202,13 @@ async function change(next) {
       mode = "login";
       message = "Bitte erneut anmelden.";
     } else if (result.status === 409) {
-      state = validateState(result.body.state);
+      state = cleanState(validateState(result.body.state));
       revision = result.body.revision;
       message =
         "Euer Plan wurde gerade auf dem anderen Gerät geändert. Der aktuelle Stand ist geladen; bitte wiederhole deine Auswahl.";
     } else if (!result.ok) throw new Error();
     else {
-      state = validateState(result.body.state);
+      state = cleanState(validateState(result.body.state));
       revision = result.body.revision;
     }
   } catch {
@@ -191,6 +222,21 @@ async function change(next) {
 root.addEventListener("click", async (e) => {
   const button = e.target.closest("button");
   if (!button || busy) return;
+  if (button.dataset.editRecipe) editIngredients(button.dataset.editRecipe);
+  if (button.dataset.removeIngredient !== undefined) {
+    ingredientDraft.splice(Number(button.dataset.removeIngredient), 1);
+    editIngredients(editingRecipeId, true);
+  }
+  if (button.dataset.action === "add-ingredient") {
+    ingredientDraft.push({
+      name: "",
+      quantity: "",
+      unit: "g",
+      category: "Vorrat",
+    });
+    editIngredients(editingRecipeId, true);
+  }
+  if (button.dataset.action === "snacks") openSnacks();
   if (button.dataset.tab) {
     tab = button.dataset.tab;
     render();
@@ -205,6 +251,13 @@ root.addEventListener("click", async (e) => {
       await change(setDish(state, date, button.dataset.pick, dates));
     }
   }
+  if (button.dataset.manualDelete)
+    await change({
+      ...state,
+      manualItems: state.manualItems.filter(
+        (i) => i.id !== button.dataset.manualDelete,
+      ),
+    });
   if (button.dataset.remove)
     await change(setDish(state, button.dataset.remove, null, dates));
   if (button.dataset.filter) {
@@ -232,17 +285,35 @@ root.addEventListener("click", async (e) => {
   }
 });
 root.addEventListener("change", (e) => {
-  if (e.target.dataset.check) {
-    const key = e.target.dataset.check;
+  if (e.target.dataset.ingredient !== undefined) {
+    captureIngredient(e.target);
+    return;
+  }
+  if (e.target.id === "manual-category") {
+    manualCategory = e.target.value;
+    return;
+  }
+  if (e.target.dataset.manualCategory) {
     change({
       ...state,
-      checked: e.target.checked
-        ? [...state.checked, key]
-        : state.checked.filter((k) => k !== key),
+      manualItems: state.manualItems.map((i) =>
+        i.id === e.target.dataset.manualCategory
+          ? { ...i, category: e.target.value }
+          : i,
+      ),
     });
+    return;
+  }
+  if (e.target.dataset.item && !busy) {
+    const item = shopping(state, dates).find(
+      (i) => i.key === e.target.dataset.item,
+    );
+    if (item) change(toggleItem(state, item, dates, e.target.checked));
   }
 });
 root.addEventListener("input", (e) => {
+  if (e.target.dataset.ingredient !== undefined) captureIngredient(e.target);
+  if (e.target.id === "manual-name") manualName = e.target.value;
   if (e.target.id === "search") {
     search = e.target.value;
     const start = e.target.selectionStart;
@@ -253,6 +324,104 @@ root.addEventListener("input", (e) => {
   }
 });
 root.addEventListener("submit", async (e) => {
+  if (e.target.id === "ingredient-form") {
+    e.preventDefault();
+    if (busy) return;
+    const id = editingRecipeId;
+    const ingredients = ingredientDraft.map((i) => ({
+      ...i,
+      quantity:
+        i.unit === "nach Bedarf"
+          ? null
+          : Number(String(i.quantity).replace(",", ".")),
+    }));
+    let next;
+    try {
+      next = validateState({
+        ...state,
+        ingredientOverrides: {
+          ...state.ingredientOverrides,
+          [id]: ingredients,
+        },
+      });
+    } catch (error) {
+      document.querySelector("#ingredient-error").textContent = error.message;
+      return;
+    }
+    document.querySelector("dialog").close();
+    await change(next);
+    if (message) editIngredients(id, true);
+    else detail(id);
+    return;
+  }
+  if (e.target.id === "snack-form") {
+    e.preventDefault();
+    if (busy) return;
+    const names = new FormData(e.target)
+      .getAll("snack")
+      .map((v) => snacks[Number(v)])
+      .filter(Boolean);
+    const fresh = names.filter(
+      (name) =>
+        !state.manualItems.some(
+          (i) =>
+            i.name.toLocaleLowerCase("de") === name.toLocaleLowerCase("de") &&
+            i.checkedOn === null,
+        ),
+    );
+    if (!names.length) {
+      document.querySelector("#snack-error").textContent =
+        "Bitte Snacks auswählen.";
+      return;
+    }
+    if (state.manualItems.length + fresh.length > 200) {
+      document.querySelector("#snack-error").textContent =
+        "Maximal 200 manuelle Artikel.";
+      return;
+    }
+    document.querySelector("dialog").close();
+    if (fresh.length)
+      await change({
+        ...state,
+        manualItems: [
+          ...state.manualItems,
+          ...fresh.map((name) => ({
+            id: crypto.randomUUID(),
+            name,
+            category: name === "Salat" ? "Gemüse & Obst" : "Vorrat",
+            checkedOn: null,
+          })),
+        ],
+      });
+    return;
+  }
+
+  if (e.target.id === "manual-form") {
+    e.preventDefault();
+    if (busy) return;
+    const name = manualName.trim();
+    if (!name) return;
+    if (state.manualItems.length >= 200) {
+      message = "Maximal 200 manuelle Artikel.";
+      render();
+      return;
+    }
+    const id = crypto.randomUUID();
+    await change({
+      ...state,
+      manualItems: [
+        ...state.manualItems,
+        { id, name, category: manualCategory, checkedOn: null },
+      ],
+    });
+    if (state.manualItems.some((i) => i.id === id)) {
+      manualName = "";
+      render();
+      document.querySelector("#manual-name")?.focus();
+    }
+    return;
+  }
+
   if (e.target.id !== "login") return;
   e.preventDefault();
   if (busy) return;
@@ -278,7 +447,7 @@ root.addEventListener("submit", async (e) => {
 async function loadShared() {
   const result = await api("state");
   if (!result.ok) throw new Error();
-  state = validateState(result.body.state);
+  state = cleanState(validateState(result.body.state));
   revision = result.body.revision;
   mode = "online";
 }
@@ -293,7 +462,7 @@ async function boot() {
     mode = "preview";
     try {
       const raw = localStorage.getItem(STORAGE);
-      if (raw) state = validateState(JSON.parse(raw));
+      if (raw) state = cleanState(validateState(JSON.parse(raw)));
     } catch {
       message =
         "Der lokale Plan konnte nicht gelesen werden. Er wurde nicht überschrieben.";
@@ -303,10 +472,19 @@ async function boot() {
   render();
 }
 // Keine Hintergrund-Neudarstellung während einer geöffneten Rezeptauswahl.
-setInterval(async () => {
+async function refreshDayAndState() {
   const next = nextWorkdays();
-  if (next.join() !== dates.join()) {
+  if (!busy && displayedToday !== localDate()) {
+    displayedToday = localDate();
     dates = next;
+    state = cleanState(state, displayedToday);
+    if (mode === "preview") {
+      try {
+        localStorage.setItem(STORAGE, JSON.stringify(state));
+      } catch {
+        message = "Tageswechsel konnte nicht lokal gespeichert werden.";
+      }
+    }
     if (mode === "preview" || mode === "online") render();
   }
   if (mode !== "online" || busy || document.querySelector("dialog")?.open)
@@ -320,12 +498,17 @@ setInterval(async () => {
       message = "Bitte erneut anmelden.";
       render();
     } else if (r.ok && r.body.revision !== revision) {
-      state = validateState(r.body.state);
+      state = cleanState(validateState(r.body.state));
       revision = r.body.revision;
       render();
     }
   } catch {
     /* Offline-Änderungen werden erst nach bestätigtem Speichern übernommen. */
   }
-}, 10000);
+}
+setInterval(refreshDayAndState, 10000);
+window.addEventListener("focus", refreshDayAndState);
+document.addEventListener("visibilitychange", () => {
+  if (!document.hidden) refreshDayAndState();
+});
 boot();

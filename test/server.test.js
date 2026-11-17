@@ -7,6 +7,7 @@ test("shared household requires login, blocks CSRF and prevents stale overwrites
     password: "a-test-password-long-enough",
     secret: "a-test-secret-with-at-least-32-characters",
     dbPath: ":memory:",
+    today: () => "2026-11-16",
   });
   const server = app.listen(0, "127.0.0.1");
   await new Promise((r) => server.once("listening", r));
@@ -93,6 +94,7 @@ test("production proxy sets secure cookies and validates HTTPS origin", async ()
     password: "a-test-password-long-enough",
     secret: "a-test-secret-with-at-least-32-characters",
     dbPath: ":memory:",
+    today: () => "2026-11-16",
     production: true,
   });
   const server = app.listen(0, "127.0.0.1");
@@ -122,6 +124,7 @@ test("parallel password checks are bounded without blocking all API access", asy
     password: "a-test-password-long-enough",
     secret: "a-test-secret-with-at-least-32-characters",
     dbPath: ":memory:",
+    today: () => "2026-11-16",
   });
   const server = app.listen(0, "127.0.0.1");
   await new Promise((r) => server.once("listening", r));
@@ -142,5 +145,103 @@ test("parallel password checks are bounded without blocking all API access", asy
   } finally {
     await new Promise((r) => server.close(r));
     close();
+  }
+});
+
+test("server migrates stored v1, cleans by Berlin day and rejects obsolete devices", async () => {
+  const { DatabaseSync } = await import("node:sqlite");
+  const { mkdtempSync, rmSync } = await import("node:fs");
+  const { tmpdir } = await import("node:os");
+  const dir = mkdtempSync(tmpdir() + "/futter-calendar-"),
+    file = dir + "/test.sqlite";
+  const seed = new DatabaseSync(file);
+  seed.exec(
+    "CREATE TABLE household(id INTEGER PRIMARY KEY,revision INTEGER,state TEXT)",
+  );
+  seed.prepare("INSERT INTO household VALUES (1,4,?)").run(
+    JSON.stringify({
+      version: 1,
+      plan: { "2026-11-20": "gnocchi", "2026-11-23": "couscous" },
+      checked: [],
+    }),
+  );
+  seed.close();
+  let day = "2026-11-20";
+  const { app, close } = createApp({
+    password: "calendar-test-password-long",
+    secret: "calendar-test-secret-at-least-32-characters",
+    dbPath: file,
+    today: () => day,
+  });
+  const server = app.listen(0, "127.0.0.1");
+  await new Promise((r) => server.once("listening", r));
+  const base = `http://127.0.0.1:${server.address().port}/api/`;
+  let cookie = "";
+  const call = async (path, method = "GET", body) =>
+    fetch(base + path, {
+      method,
+      headers: { "Content-Type": "application/json", Cookie: cookie },
+      ...(body ? { body: JSON.stringify(body) } : {}),
+    });
+  try {
+    const login = await call("login", "POST", {
+      password: "calendar-test-password-long",
+    });
+    cookie = login.headers.get("set-cookie").split(";")[0];
+    let initial = await (await call("state")).json();
+    assert.equal(initial.revision, 5);
+    assert.equal(initial.state.version, 3);
+    const state = {
+      ...initial.state,
+      manualItems: [
+        { id: "coffee", name: "Kaffee", category: "Vorrat", checkedOn: null },
+        {
+          id: "soap",
+          name: "Spülmittel",
+          category: "Haushalt",
+          checkedOn: "2099-01-01",
+        },
+      ],
+    };
+    const saved = await (
+      await call("state", "PUT", { state, revision: initial.revision })
+    ).json();
+    assert.equal(saved.state.manualItems[1].checkedOn, "2026-11-20");
+    day = "2026-11-21";
+    const next = await (await call("state")).json();
+    assert.equal(next.revision, saved.revision + 1);
+    assert.deepEqual(next.state.plan, { "2026-11-23": "couscous" });
+    assert.deepEqual(
+      next.state.manualItems.map((i) => i.id),
+      ["coffee"],
+    );
+    assert.equal(
+      (
+        await call("state", "PUT", {
+          state: saved.state,
+          revision: saved.revision,
+        })
+      ).status,
+      409,
+    );
+    assert.equal(
+      (
+        await call("state", "PUT", {
+          state: { version: 1, plan: {}, checked: [] },
+          revision: next.revision,
+        })
+      ).status,
+      409,
+    );
+    const read = new DatabaseSync(file);
+    const persisted = JSON.parse(
+      read.prepare("SELECT state FROM household").get().state,
+    );
+    read.close();
+    assert.deepEqual(persisted, next.state);
+  } finally {
+    await new Promise((r) => server.close(r));
+    close();
+    rmSync(dir, { recursive: true, force: true });
   }
 });

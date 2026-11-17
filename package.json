@@ -9,7 +9,9 @@
     "start": "node --env-file-if-exists=.env server/index.js",
     "test": "node --test test/*.test.js",
     "test:browser": "node test/browser.mjs",
-    "test:shared": "node test/shared-browser.mjs"
+    "test:shared": "node test/shared-browser.mjs",
+    "test:calendar": "node test/calendar-browser.mjs",
+    "test:recipes": "node test/recipe-snack-browser.mjs"
   },
   "engines": {
     "node": ">=22.13"
