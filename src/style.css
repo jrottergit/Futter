@@ -956,3 +956,14 @@ dialog > p {
       border-color 0.15s;
   }
 }
+
+/* Compact utility layout: no promotional hero or footer. */
+.shell { padding-bottom: calc(120px + env(safe-area-inset-bottom)); }
+header > .text-button, header > .preview-badge { margin-left: auto; }
+main { padding-top: 28px; }
+.intro { margin: 0 0 24px; }
+.intro h1 { font-size: clamp(30px, 4vw, 40px); line-height: 1.15; letter-spacing: -.7px; margin-bottom: 10px; }
+.intro .eyebrow { margin-bottom: 12px; }
+.intro > p:last-child { font-size: 14px; margin-bottom: 0; }
+.gate .wordmark { margin-bottom: 32px; }
+.gate h1 { font-size: 32px; letter-spacing: -.5px; }

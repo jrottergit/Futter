@@ -15,7 +15,7 @@ try {
   const errors = [];
   page.on("pageerror", (e) => errors.push(e.message));
   await page.goto(process.env.FUTTER_TEST_URL || "http://127.0.0.1:5174");
-  await page.getByRole("heading", { name: "Eure nächsten Abende" }).waitFor();
+  await page.getByRole("heading", { name: "Nächste fünf Werktage" }).waitFor();
   assert.equal(await page.locator(".day").count(), 5);
   await page.getByRole("button", { name: "＋ Gericht wählen" }).first().click();
   await page.getByRole("button", { name: /Gnocchi-Gemüse-Pfanne/ }).click();
@@ -29,7 +29,7 @@ try {
   assert.match(await feta.textContent(), /300 g/);
   await feta.getByRole("checkbox").check();
   await page.reload();
-  await page.getByRole("heading", { name: "Eure nächsten Abende" }).waitFor();
+  await page.getByRole("heading", { name: "Nächste fünf Werktage" }).waitFor();
   await page
     .getByRole("button", { name: /Einkauf/ })
     .last()
@@ -45,7 +45,7 @@ try {
   await page.getByRole("searchbox").fill("Erdnuss");
   assert.equal(await page.locator(".recipe-card").count(), 1);
   await page.locator(".recipe-card").click();
-  await page.getByRole("heading", { name: "So geht’s" }).waitFor();
+  await page.getByRole("heading", { name: "Zubereitung" }).waitFor();
   assert(
     await page
       .locator("dialog")
@@ -62,7 +62,7 @@ try {
     );
   }
   await page.setViewportSize({ width: 390, height: 844 });
-  await page.getByRole("button", { name: "Mein Plan", exact: true }).click();
+  await page.getByRole("button", { name: "Plan", exact: true }).click();
   await page.screenshot({ path: "/tmp/futter-mobile.png", fullPage: true });
   assert.deepEqual(errors, []);
   console.log(

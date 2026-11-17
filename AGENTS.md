@@ -7,3 +7,5 @@
 - Public ingress is NGINX on the public IPv4 only. Preserve other apps, SSH and Tailscale routes.
 - Avoid synchronous expensive password work on requests. Preserve rate limiting, bounded concurrency, CSRF/origin checks, and revision checks.
 - Use targeted tests. Live acceptance must not overwrite real meal plans; use isolated databases for write tests.
+
+- Product copy: this is a private utility for a couple, not a marketing site. Use concise functional labels. No slogans, promotional hero sections, decorative taglines or redundant explanatory copy.

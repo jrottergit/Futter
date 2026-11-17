@@ -26,7 +26,7 @@ try {
       .getByLabel("Haushaltspasswort")
       .fill("browser-test-password-only");
     await page.getByRole("button", { name: "Anmelden", exact: false }).click();
-    await page.getByRole("heading", { name: "Eure nächsten Abende" }).waitFor();
+    await page.getByRole("heading", { name: "Nächste fünf Werktage" }).waitFor();
   }
   await a.getByRole("button", { name: "＋ Gericht wählen" }).first().click();
   await a.getByRole("button", { name: /Gnocchi-Gemüse-Pfanne/ }).click();
