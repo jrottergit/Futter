@@ -4,16 +4,33 @@ After=network.target
 
 [Service]
 Type=simple
-WorkingDirectory=%h/.local/share/futter/app
-EnvironmentFile=%h/.config/futter/server.env
-ExecStart=/home/linuxbrew/.linuxbrew/bin/node server/index.js
+User=futter
+Group=futter
+WorkingDirectory=/opt/futter
+EnvironmentFile=/etc/futter/server.env
+Environment=FUTTER_DATA_DIR=/var/lib/futter
+ExecStart=/usr/bin/node server/index.js
 Restart=on-failure
 RestartSec=5
+StateDirectory=futter
+StateDirectoryMode=0700
 UMask=0077
 NoNewPrivileges=yes
 PrivateTmp=yes
+PrivateDevices=yes
 ProtectSystem=strict
-ReadWritePaths=%h/.local/share/futter/app/data
+ProtectHome=yes
+ReadWritePaths=/var/lib/futter
+CapabilityBoundingSet=
+RestrictSUIDSGID=yes
+RestrictNamespaces=yes
+ProtectKernelTunables=yes
+ProtectKernelModules=yes
+ProtectControlGroups=yes
+RestrictAddressFamilies=AF_INET AF_INET6 AF_UNIX
+MemoryMax=256M
+TasksMax=64
+CPUQuota=100%
 
 [Install]
-WantedBy=default.target
+WantedBy=multi-user.target

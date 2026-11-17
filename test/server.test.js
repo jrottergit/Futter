@@ -116,3 +116,31 @@ test("production proxy sets secure cookies and validates HTTPS origin", async ()
     close();
   }
 });
+
+test("parallel password checks are bounded without blocking all API access", async () => {
+  const { app, close } = createApp({
+    password: "a-test-password-long-enough",
+    secret: "a-test-secret-with-at-least-32-characters",
+    dbPath: ":memory:",
+  });
+  const server = app.listen(0, "127.0.0.1");
+  await new Promise((r) => server.once("listening", r));
+  const base = `http://127.0.0.1:${server.address().port}`;
+  try {
+    const attempts = Array.from({ length: 6 }, () =>
+      fetch(base + "/api/login", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ password: "wrong" }),
+      }),
+    );
+    const status = await fetch(base + "/api/session");
+    assert.equal(status.status, 200);
+    const responses = await Promise.all(attempts);
+    assert(responses.some((r) => r.status === 429));
+    assert(responses.every((r) => [401, 429].includes(r.status)));
+  } finally {
+    await new Promise((r) => server.close(r));
+    close();
+  }
+});

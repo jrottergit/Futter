@@ -41,7 +41,7 @@ Der VPS-Dienst und tägliche Backups sind eingerichtet. Futter ist ohne Tailscal
 Für Zugriff über einen Web-Link muss ein HTTPS-Reverse-Proxy vor dem Node-Server stehen. Produktion mit `NODE_ENV=production` starten: Cookies werden dann nur über HTTPS gesendet. Der Server bindet ausschließlich an Loopback; als Proxy wird nur Loopback vertraut. Der Proxy muss den ursprünglichen Host und `X-Forwarded-Proto: https` korrekt übermitteln und eingehende Forwarded-Header überschreiben.
 
 - Sitzungen liegen für diesen einzelnen Haushalt im Arbeitsspeicher. Nach Server-Neustart ist eine erneute Anmeldung nötig; der Plan bleibt in SQLite erhalten.
-- SQLite-Dateien unter `data/` und `.env` dürfen nicht öffentlich ausgeliefert oder ins Git aufgenommen werden. Für den produktiven Betrieb sind persistentes Datenverzeichnis und SQLite-konsistente Backups einzurichten.
+- SQLite-Dateien unter `data/` (lokal) bzw. `/var/lib/futter` (VPS) und Zugangskonfiguration dürfen nicht öffentlich ausgeliefert oder ins Git aufgenommen werden. Für den produktiven Betrieb sind persistentes Datenverzeichnis und SQLite-konsistente Backups einzurichten.
 - Anmeldeversuche sind begrenzt; Schreibzugriffe prüfen den Ursprung. Keine öffentliche Registrierung.
 - Offline wird kein gemeinsamer Schreibzugriff vorgetäuscht: fehlgeschlagene Änderungen werden gemeldet und müssen wiederholt werden. Es gibt noch keinen Service Worker für einen Offline-Kaltstart.
 - Manifest und SVG-Icon sind vorhanden. Vollständige iOS-Home-Screen-Icons und Abnahme auf einem echten iPhone stehen aus.
@@ -62,3 +62,7 @@ npm run test:shared
 Optional: `FUTTER_CHROMIUM` setzt den Pfad eines vorhandenen Chromium-Browsers. `FUTTER_TEST_URL` ändert die Zieladresse des Vorschautests.
 
 Produktentscheidungen und Ablauf: [docs/PRODUCT_PLAN.md](docs/PRODUCT_PLAN.md).
+
+Der produktive Systemdienst läuft unter einem eigenen eingeschränkten Benutzer, mit root-eigenem Code und geschütztem Home-Verzeichnis. Passwortprüfungen laufen asynchron und mit begrenzter Parallelität.
+
+Aktueller Sicherheitsstand und verbleibende Punkte: [docs/SECURITY.md](docs/SECURITY.md).

@@ -2,10 +2,12 @@ import express from "express";
 import session from "express-session";
 import memorystore from "memorystore";
 import { rateLimit } from "express-rate-limit";
-import { scryptSync, timingSafeEqual, randomBytes } from "node:crypto";
+import { scryptSync, scrypt, timingSafeEqual, randomBytes } from "node:crypto";
 import { DatabaseSync } from "node:sqlite";
 import { validateState, emptyState } from "../src/core.js";
 import path from "node:path";
+import { promisify } from "node:util";
+const derivePassword = promisify(scrypt);
 import { fileURLToPath } from "node:url";
 
 export function createApp({ password, secret, dbPath, production = false }) {
@@ -80,6 +82,7 @@ export function createApp({ password, secret, dbPath, production = false }) {
   app.get("/api/session", (req, res) =>
     res.json({ authenticated: req.session.authenticated === true }),
   );
+  let activePasswordChecks = 0;
   app.post(
     "/api/login",
     rateLimit({
@@ -89,11 +92,27 @@ export function createApp({ password, secret, dbPath, production = false }) {
       legacyHeaders: false,
       message: { error: "Zu viele Versuche. Bitte später erneut versuchen." },
     }),
-    (req, res, next) => {
+    async (req, res, next) => {
       const input = req.body?.password;
       if (typeof input !== "string" || input.length > 512)
         return res.status(401).json({ error: "Passwort stimmt nicht." });
-      if (!timingSafeEqual(scryptSync(input, salt, 64), passwordHash))
+      if (activePasswordChecks >= 2)
+        return res
+          .status(429)
+          .json({ error: "Anmeldung ausgelastet. Bitte kurz warten." });
+      activePasswordChecks++;
+      let valid;
+      try {
+        valid = timingSafeEqual(
+          await derivePassword(input, salt, 64),
+          passwordHash,
+        );
+      } catch (error) {
+        return next(error);
+      } finally {
+        activePasswordChecks--;
+      }
+      if (!valid)
         return res.status(401).json({ error: "Passwort stimmt nicht." });
       req.session.regenerate((error) => {
         if (error) return next(error);

@@ -1,12 +1,15 @@
 # Futter-Betrieb auf dem VPS
 
-## Trennung
+## Trennung (gehärteter Betrieb)
 
-- Quellcode im Git-Checkout; laufende Kopie unter `~/.local/share/futter/app`.
-- Zugangsdaten ausschließlich in `~/.config/futter/server.env`, Modus `0600`, Verzeichnis `0700`.
-- Datenbank unter `~/.local/share/futter/app/data/futter.sqlite`; Prozess-Umask `0077`.
-- `futter.service` bindet nur an `127.0.0.1:8788`. Benutzer-Lingering erlaubt Betrieb unabhängig von einer SSH-Sitzung.
-- Produktion nutzt sichere HTTPS-Cookies. Die Sitzungsspeicherung ist auf 100 Einträge begrenzt und bereinigt abgelaufene Sessions stündlich. Neustarts erfordern erneute Anmeldung, nicht erneute Planung.
+- Quellcode im Git-Checkout; laufende, root-eigene Code-Kopie unter `/opt/futter`.
+- Systemdienst unter eigenem Benutzer/Gruppe `futter`, keine Login-Shell und keine sudo-Rechte.
+- Zugangsdaten ausschließlich in `/etc/futter/server.env`, root-eigen und `0600`; das root-Verzeichnis ist `0700`. Systemd liest die Datei vor dem Benutzerwechsel. Der Dienst erhält die nötigen Werte als Prozessumgebung.
+- Datenbank `/var/lib/futter/futter.sqlite`, Backups `/var/backups/futter` (root-eigen, für die App nicht zugänglich); Rechte `0700`/`0600` und Prozess-Umask `0077`.
+- `FUTTER_DATA_DIR=/var/lib/futter` setzt den Speicherort. Der Server bindet weiterhin ausschließlich an `127.0.0.1:8788`.
+- Systemweite `futter.service`: `ProtectHome=yes`, `ProtectSystem=strict`, `NoNewPrivileges=yes`, private Geräte/Temporärdateien, leere Capability-Liste, Ressourcenlimits und ein eigener Mount-Namespace. Schreibzugriff ist auf das Datenverzeichnis begrenzt.
+- Keine Benutzer-Unit für die öffentliche App verwenden: Die ursprüngliche Benutzer-Unit bot hier keine wirksame Dateisystem-Sandbox. Nach jeder Änderung die echten Prozess-UIDs, Mount-Namespace und Mount-Optionen prüfen, nicht nur die Unit-Datei.
+- Produktion nutzt sichere HTTPS-Cookies. Sessions sind begrenzt und enden bei Server-Neustart; der Plan bleibt erhalten.
 
 ## HTTPS direkt über die öffentliche IP
 
@@ -39,22 +42,22 @@ Ein Wechsel von einem NGINX-Wildcard-Listener auf eine bestimmte lokale IP benö
 
 ## Systemd und Updates
 
-Die Vorlagen verwenden die auf diesem VPS vorhandene Node-Installation. Für andere Hosts `ExecStart` anpassen.
+Die Vorlagen verwenden `/usr/bin/node`. Für andere Hosts Pfad und Node-Version prüfen.
 
 ```sh
-systemctl --user status futter.service
-systemctl --user status futter-backup.timer
-journalctl --user -u futter.service --no-pager -n 30
+sudo systemctl status futter.service
+sudo systemctl status futter-backup.timer
+sudo journalctl -u futter.service --no-pager -n 30
 ```
 
-Updates zuerst im Checkout bauen und prüfen. Vor der Aktualisierung einen Datenbank-Backup erstellen, dann Dienst stoppen, `dist`, `src`, `server`, `deploy` und Paketdateien in die laufende Kopie übernehmen, dort `npm ci --omit=dev` ausführen und Dienst starten. `data` und `server.env` nicht überschreiben. Zugang prüfen; im Fehlerfall die vorherige Code-Kopie zurückspielen.
+Updates zuerst im Checkout bauen und prüfen. Vor der Aktualisierung einen Datenbank-Backup erstellen, dann Dienst stoppen, `dist`, `src`, `server`, `deploy` und Paketdateien in die laufende Kopie übernehmen, dort `npm ci --omit=dev` ausführen und Dienst starten. `/var/lib/futter` und `/etc/futter/server.env` nicht überschreiben. Den Code root-eigen und für `futter` schreibgeschützt halten. Zugang prüfen; im Fehlerfall die vorherige Code-Kopie zurückspielen.
 
 ## Backup und Wiederherstellung
 
-`futter-backup.timer` erstellt täglich ab 03:40 Uhr lokaler Serverzeit mit bis zu zehn Minuten Streuung ein SQLite-konsistentes Backup unter `~/.local/share/futter/backups`. Jede Kopie wird mit `PRAGMA integrity_check` geprüft. Der Timer holt verpasste Läufe nach. Erstes Backup wurde manuell geprüft. Es gibt zunächst keine automatische Löschung und keine externe Backup-Kopie.
+`futter-backup.timer` erstellt täglich ab 03:40 Uhr lokaler Serverzeit mit bis zu zehn Minuten Streuung ein SQLite-konsistentes Backup unter `/var/backups/futter`. Jede Kopie wird mit `PRAGMA integrity_check` geprüft. Der Timer holt verpasste Läufe nach. Erstes Backup wurde manuell geprüft. Es gibt zunächst keine automatische Löschung und keine externe Backup-Kopie.
 
 ```sh
-systemctl --user start futter-backup.service
+sudo systemctl start futter-backup.service
 ```
 
 Zum Wiederherstellen den Dienst stoppen, das gesamte bisherige Datenverzeichnis zur Rückkehrmöglichkeit umbenennen, ein neues privates Datenverzeichnis anlegen und eine geprüfte Backup-Datei als `futter.sqlite` hineinkopieren. Danach Dienst starten und Anmeldung/Plan prüfen. Währenddessen nicht weiter in die alte Datenbank schreiben.
@@ -67,3 +70,13 @@ Zum Wiederherstellen den Dienst stoppen, das gesamte bisherige Datenverzeichnis 
 4. Fremde Origin und veraltete Revision weiterhin abweisen.
 5. Bestehende Tailscale-Serve-Routen mit der Sicherung vergleichen.
 6. Nutzer öffnet den Link auf dem eigenen iPhone; ein VPS-Browsertest ersetzt diese Abnahme nicht.
+
+## Rollback der Benutzertrennung
+
+Die bisherige Benutzer-Unit und alte Daten unter `~/.local/share/futter` bleiben deaktiviert erhalten. Sie sind nur eine Rückkehrmöglichkeit, kein aktueller zweiter Datenbestand. Vor Rückkehr den Systemdienst stoppen und die aktuelle SQLite-Datenbank konsistent zurücksichern. Beide Dienste nie gleichzeitig auf Port 8788 starten.
+
+## Bekannte Restpunkte
+
+Die Entwicklungsabhängigkeit `picomatch@4.0.7` hat das ReDoS-Advisory GHSA-fc5q-39xc-vjpf. Zum Härtungszeitpunkt ist keine neuere Version im Registry veröffentlicht. Keine Produktionsabhängigkeit, nicht in `/opt/futter/node_modules`; der überflüssige Entwicklungsserver wurde beendet. Kein erzwungener Vite-Downgrade. Nach Patch-Veröffentlichung gezielt aktualisieren und Build prüfen.
+
+Backups werden von einem getrennten root-eigenen Dienst erstellt und unter `/var/backups/futter` geschützt. Die App kann diese Kopien nicht löschen. Auch dies ersetzt noch kein externes Backup.

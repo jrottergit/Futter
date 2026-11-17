@@ -5,9 +5,9 @@ from datetime import datetime, timezone
 from pathlib import Path
 import sqlite3
 os.umask(0o077)
-base = Path.home() / '.local/share/futter'
-source = base / 'app/data/futter.sqlite'
-destination = base / 'backups'
+base = Path('/var/lib/futter')
+source = base / 'futter.sqlite'
+destination = Path('/var/backups/futter')
 destination.mkdir(mode=0o700, parents=True, exist_ok=True)
 name = destination / ('futter-' + datetime.now(timezone.utc).strftime('%Y%m%dT%H%M%S%fZ') + '.sqlite')
 with sqlite3.connect(source.as_uri() + '?mode=ro', uri=True) as src:
