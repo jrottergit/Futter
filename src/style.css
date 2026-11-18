@@ -969,12 +969,11 @@ main { padding-top: 28px; }
 .gate h1 { font-size: 32px; letter-spacing: -.5px; }
 .manual-form {display:flex; flex-wrap:wrap; gap:12px; align-items:flex-end; margin-bottom:28px;}
 .manual-form label {display:grid; gap:7px; font-size:12px; flex:1; min-width:140px;}
-.manual-form input,.manual-form select,.manual-actions select {width:100%; min-height:44px; border:1px solid var(--line); border-radius:8px; padding:10px; background:var(--paper); color:var(--green); font:inherit; font-size:16px;}
+.manual-form input,.manual-form select {width:100%; min-height:44px; border:1px solid var(--line); border-radius:8px; padding:10px; background:var(--paper); color:var(--green); font:inherit; font-size:16px;}
 .manual-form .primary {min-height:44px;}
 .shopping-entry {border-bottom:1px solid var(--line);}
 .shopping-entry .shopping-row {border-bottom:0;}
 .manual-actions {display:flex; align-items:center; gap:12px; padding:0 3px 12px 41px;}
-.manual-actions select {flex:1; max-width:240px; font-size:13px;}
 @media(max-width:420px){.manual-form label{flex-basis:100%;}.manual-form .primary{width:100%;}}
 .manual-form .manual-field {display:grid;gap:7px;flex:1;min-width:140px;}
 .manual-form label {display:block;min-width:0;}

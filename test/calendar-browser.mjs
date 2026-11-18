@@ -52,13 +52,11 @@ try {
     await a.getByRole("button", { name: "Hinzufügen", exact: true }).click();
     await a.locator(".shopping-entry").filter({ hasText: name }).waitFor();
   }
-  await add("Kaffee", "Vorrat");
+  await add("Kaffee", "Getränke");
   await add("Spülmittel", "Haushalt");
   const soap = a.locator(".shopping-entry").filter({ hasText: "Spülmittel" });
   await soap.getByRole("checkbox").check();
-  await a
-    .getByLabel("Kategorie für Kaffee", { exact: true })
-    .selectOption("Getränke");
+  assert.equal(await a.locator(".shopping-entry select").count(), 0);
   await a
     .locator(".shopping-groups section")
     .filter({ has: a.getByRole("heading", { name: "Getränke", exact: true }) })
@@ -138,7 +136,7 @@ try {
   assert.equal(snapshot.state.manualItems.length, 0);
   assert.deepEqual(errors, []);
   console.log(
-    "PASS: manual add/category/reassign/check/delete/XSS escaping and two-device sync; Friday→Saturday recipe cleanup; open items survive; Saturday→Sunday bought-item cleanup even with unchanged workdays; 320/390px layout.",
+    "PASS: manual add/category/check/delete/XSS escaping; no per-item category dropdown and two-device sync; Friday→Saturday recipe cleanup; open items survive; Saturday→Sunday bought-item cleanup even with unchanged workdays; 320/390px layout.",
   );
 } finally {
   await browser.close();

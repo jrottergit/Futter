@@ -123,7 +123,7 @@ function renderShopping(items) {
                 .map((i) => {
                   const key = checkKey(i, dates),
                     checked = isChecked(state, i, dates);
-                  return `<div class="shopping-entry"><label class="shopping-row ${checked ? "done" : ""}"><input type="checkbox" data-item="${esc(i.key)}" ${checked ? "checked" : ""} ${busy ? "disabled" : ""}><span>${esc(i.name)}</span><strong>${quantityLabel(i)}</strong></label>${i.manualId ? `<div class="manual-actions"><select data-manual-category="${i.manualId}" aria-label="Kategorie für ${esc(i.name)}" ${busy ? "disabled" : ""}>${categories.map((c) => `<option ${c === i.category ? "selected" : ""}>${esc(c)}</option>`).join("")}</select><button class="text-button" data-manual-delete="${i.manualId}" aria-label="${esc(i.name)} löschen" ${busy ? "disabled" : ""}>Löschen</button></div>` : ""}</div>`;
+                  return `<div class="shopping-entry"><label class="shopping-row ${checked ? "done" : ""}"><input type="checkbox" data-item="${esc(i.key)}" ${checked ? "checked" : ""} ${busy ? "disabled" : ""}><span>${esc(i.name)}</span><strong>${quantityLabel(i)}</strong></label>${i.manualId ? `<div class="manual-actions"><button class="text-button" data-manual-delete="${i.manualId}" aria-label="${esc(i.name)} löschen" ${busy ? "disabled" : ""}>Löschen</button></div>` : ""}</div>`;
                 })
                 .join("")}</section>`,
           )
@@ -291,17 +291,6 @@ root.addEventListener("change", (e) => {
   }
   if (e.target.id === "manual-category") {
     manualCategory = e.target.value;
-    return;
-  }
-  if (e.target.dataset.manualCategory) {
-    change({
-      ...state,
-      manualItems: state.manualItems.map((i) =>
-        i.id === e.target.dataset.manualCategory
-          ? { ...i, category: e.target.value }
-          : i,
-      ),
-    });
     return;
   }
   if (e.target.dataset.item && !busy) {
