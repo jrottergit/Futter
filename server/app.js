@@ -109,10 +109,19 @@ export function createApp({
     "/api/login",
     rateLimit({
       windowMs: 15 * 60 * 1000,
-      limit: 10,
+      limit: 3,
+      skipSuccessfulRequests: true,
       standardHeaders: "draft-8",
       legacyHeaders: false,
-      message: { error: "Zu viele Versuche. Bitte später erneut versuchen." },
+      handler: (req, res) => {
+        const seconds = Math.max(1, Math.ceil(
+          ((req.rateLimit.resetTime?.getTime() || Date.now() + 900000) - Date.now()) / 1000,
+        ));
+        res.set("Retry-After", String(seconds));
+        res.status(429).json({
+          error: `Zu viele Fehlversuche. Bitte in ${Math.ceil(seconds / 60)} Minuten erneut versuchen.`,
+        });
+      },
     }),
     async (req, res, next) => {
       const input = req.body?.password;

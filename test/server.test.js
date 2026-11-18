@@ -245,3 +245,38 @@ test("server migrates stored v1, cleans by Berlin day and rejects obsolete devic
     rmSync(dir, { recursive: true, force: true });
   }
 });
+
+
+test("three failed logins block the IP; successful logins do not consume the limit", async () => {
+  const password = "a-test-password-long-enough";
+  const { app, close } = createApp({
+    password,
+    secret: "a-test-secret-with-at-least-32-characters",
+    dbPath: ":memory:",
+  });
+  const server = app.listen(0, "127.0.0.1");
+  await new Promise(r => server.once("listening", r));
+  const base = `http://127.0.0.1:${server.address().port}`;
+  const login = value => fetch(base + "/api/login", {
+    method: "POST", headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ password: value }),
+  });
+  try {
+    for (let i = 0; i < 4; i++) assert.equal((await login(password)).status, 200);
+    for (let i = 0; i < 3; i++) assert.equal((await login("wrong")).status, 401);
+    const blocked = await login(password);
+    assert.equal(blocked.status, 429);
+    const retry = Number(blocked.headers.get("retry-after"));
+    assert(retry > 0 && retry <= 900);
+    assert.match((await blocked.json()).error, /Minuten/);
+    const spoofed = await fetch(base + "/api/login", {
+      method: "POST", headers: { "Content-Type": "application/json", "X-Forwarded-For": "192.0.2.99" },
+      body: JSON.stringify({ password }),
+    });
+    assert.equal(spoofed.status, 429);
+    assert.equal((await fetch(base + "/api/session")).status, 200);
+  } finally {
+    await new Promise(r => server.close(r));
+    close();
+  }
+});

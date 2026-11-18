@@ -43,3 +43,7 @@ Die Tests verwenden isolierte Testdaten, keine echten Haushaltsdaten. Kein echte
 - Build and all 13 core/API tests passed.
 - `FUTTER_CHROMIUM=<installed chromium> node test/subpath-browser.mjs`: isolated browser writes and rendering under `/futter/`, at 320/390/1024px.
 - Live HTTPS verified login/logout, secure HttpOnly cookie path `/futter/`, protected API, manifest scope, assets, root redirect and 404 for unconfigured paths. No live household writes. Existing service, database and TLS renewal unchanged.
+
+## Login rate limit
+
+14/14 tests passed. Three failed logins block further logins (including the correct password) with HTTP 429 and Retry-After <=900 seconds; successful logins do not consume the limit. Forged forwarding headers do not bypass the direct-app limiter. Live prefixed HTTPS login/logout and advertised rate policy q=3/w=900 verified without failed live attempts or household writes.

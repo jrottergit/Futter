@@ -84,3 +84,7 @@ Backups werden von einem getrennten root-eigenen Dienst erstellt und unter `/var
 ## Mehrere Apps auf derselben IP
 
 NGINX entfernt für Futter das Präfix `/futter/` vor der Weiterleitung an Port 8788. Assets und API werden relativ geladen; das Manifest ist auf diesen Pfad begrenzt. Produktions-Sitzungscookies gelten nur unter `/futter/`. `/` leitet auf `/futter/` weiter, andere nicht konfigurierte Pfade liefern 404. Weitere Apps erhalten eigene Location-Blöcke und getrennte Dienste; Pfade allein trennen keine Browser-Ursprünge. Nach dem Wechsel App neu laden und erneut anmelden.
+
+## Login-Bremse
+
+Höchstens drei fehlgeschlagene Login-Anfragen pro IP in einem 15-Minuten-Fenster. Danach HTTP 429 mit Retry-After und Wartezeit im UI; erfolgreiche Logins zählen nicht mit. IP-Erkennung über den Loopback-Proxy: NGINX ersetzt X-Forwarded-For durch die tatsächliche Client-IP. Bestehende Sessions bleiben nutzbar; kein globales Haushalt-Lockout. Zähler liegen im RAM und werden beim Dienst-Neustart zurückgesetzt. Der Schutz begrenzt einzelne IPs, nicht verteilte Angriffe über viele IPs.
