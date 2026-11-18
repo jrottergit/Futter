@@ -1,18 +1,19 @@
 {
-  "id": "/",
+  "id": "./",
   "name": "Futter – Abendessen für zwei",
   "short_name": "Futter",
   "lang": "de",
-  "start_url": "/",
+  "start_url": "./",
   "display": "standalone",
   "background_color": "#f8f5ed",
   "theme_color": "#1f4937",
   "icons": [
     {
-      "src": "/icon.svg",
+      "src": "./icon.svg",
       "sizes": "any",
       "type": "image/svg+xml",
       "purpose": "any"
     }
-  ]
+  ],
+  "scope": "./"
 }

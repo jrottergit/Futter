@@ -53,7 +53,7 @@ const icon = (type) => ({ plan: "▦", recipes: "♧", shopping: "✓" })[type];
 const dishArt = (r) =>
   `<div class="dish-art ${r.art}" aria-hidden="true"><div class="plate"><i></i><i></i><i></i><i></i><i></i><i></i><i></i></div></div>`;
 async function api(path, options = {}) {
-  const response = await fetch(`/api/${path}`, {
+  const response = await fetch(new URL(`api/${path}`, document.baseURI), {
     ...options,
     headers: { "Content-Type": "application/json" },
     signal: AbortSignal.timeout(10000),

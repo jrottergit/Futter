@@ -13,7 +13,7 @@
 
 ## HTTPS direkt über die öffentliche IP
 
-Futter ist unter **https://169.58.211.254** erreichbar, ohne Domain und ohne Tailscale auf den Endgeräten.
+Futter ist unter **https://169.58.211.254/futter/** erreichbar, ohne Domain und ohne Tailscale auf den Endgeräten.
 
 - NGINX bindet ausschließlich an `169.58.211.254:80` und `169.58.211.254:443`. Bestehende Tailscale-Listener bleiben unverändert.
 - HTTP leitet auf HTTPS um, ausgenommen `/.well-known/acme-challenge/` für Zertifikatsvalidierung.
@@ -80,3 +80,7 @@ Die bisherige Benutzer-Unit und alte Daten unter `~/.local/share/futter` bleiben
 Die Entwicklungsabhängigkeit `picomatch@4.0.7` hat das ReDoS-Advisory GHSA-fc5q-39xc-vjpf. Zum Härtungszeitpunkt ist keine neuere Version im Registry veröffentlicht. Keine Produktionsabhängigkeit, nicht in `/opt/futter/node_modules`; der überflüssige Entwicklungsserver wurde beendet. Kein erzwungener Vite-Downgrade. Nach Patch-Veröffentlichung gezielt aktualisieren und Build prüfen.
 
 Backups werden von einem getrennten root-eigenen Dienst erstellt und unter `/var/backups/futter` geschützt. Die App kann diese Kopien nicht löschen. Auch dies ersetzt noch kein externes Backup.
+
+## Mehrere Apps auf derselben IP
+
+NGINX entfernt für Futter das Präfix `/futter/` vor der Weiterleitung an Port 8788. Assets und API werden relativ geladen; das Manifest ist auf diesen Pfad begrenzt. Produktions-Sitzungscookies gelten nur unter `/futter/`. `/` leitet auf `/futter/` weiter, andere nicht konfigurierte Pfade liefern 404. Weitere Apps erhalten eigene Location-Blöcke und getrennte Dienste; Pfade allein trennen keine Browser-Ursprünge. Nach dem Wechsel App neu laden und erneut anmelden.

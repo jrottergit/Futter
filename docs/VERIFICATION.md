@@ -37,3 +37,9 @@ Die Tests verwenden isolierte Testdaten, keine echten Haushaltsdaten. Kein echte
 - Mobile Breiten 320/390 px ohne horizontalen Überlauf geprüft.
 - Vor jeder Live-Migration konsistente Datenbank- und Code-Sicherungen erstellt. Migrierter Inhalt entspricht exakt dem vorab berechneten Zielzustand; SQLite-Integrität erfolgreich geprüft.
 - Live-HTTPS-Browserprüfung nach Veröffentlichung: Anmeldung, fünf Tage, manuelles Formular und Kategorien, alle sechs Snack-Optionen, zwölf Rezeptkarten und Zutateneditor, anschließend Abmelden. Keine Schreibtests an echten Haushaltsdaten.
+
+## Path hosting (/futter/)
+
+- Build and all 13 core/API tests passed.
+- `FUTTER_CHROMIUM=<installed chromium> node test/subpath-browser.mjs`: isolated browser writes and rendering under `/futter/`, at 320/390/1024px.
+- Live HTTPS verified login/logout, secure HttpOnly cookie path `/futter/`, protected API, manifest scope, assets, root redirect and 404 for unconfigured paths. No live household writes. Existing service, database and TLS renewal unchanged.
