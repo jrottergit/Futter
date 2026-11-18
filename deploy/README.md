@@ -64,7 +64,7 @@ Zum Wiederherstellen den Dienst stoppen, das gesamte bisherige Datenverzeichnis 
 
 ## Auslieferungsprüfung
 
-1. HTTPS-Startseite ohne Anmeldedaten erreichbar, aber `/api/state` liefert 401.
+1. HTTPS-Startseite unter `/futter/` ohne Anmeldedaten erreichbar, aber `/futter/api/state` liefert 401.
 2. Anmeldung über echten HTTPS-Link setzt `Secure`, `HttpOnly`, `SameSite=Strict`.
 3. Anmeldung/Plan auf zwei getrennten Browser-Sitzungen prüfen; anschließend abmelden.
 4. Fremde Origin und veraltete Revision weiterhin abweisen.
@@ -77,7 +77,7 @@ Die bisherige Benutzer-Unit und alte Daten unter `~/.local/share/futter` bleiben
 
 ## Bekannte Restpunkte
 
-Die Entwicklungsabhängigkeit `picomatch@4.0.7` hat das ReDoS-Advisory GHSA-fc5q-39xc-vjpf. Zum Härtungszeitpunkt ist keine neuere Version im Registry veröffentlicht. Keine Produktionsabhängigkeit, nicht in `/opt/futter/node_modules`; der überflüssige Entwicklungsserver wurde beendet. Kein erzwungener Vite-Downgrade. Nach Patch-Veröffentlichung gezielt aktualisieren und Build prüfen.
+Die aktuellen npm-Audits vom 18.11.2026 melden weder im Entwicklungs- noch im Laufzeitbaum bekannte Schwachstellen. Das zuvor gemeldete picomatch-Advisory wird aktuell nicht mehr gemeldet; daraus folgt weder eine von uns vorgenommene Paketkorrektur noch eine allgemeine Sicherheitsgarantie.
 
 Backups werden von einem getrennten root-eigenen Dienst erstellt und unter `/var/backups/futter` geschützt. Die App kann diese Kopien nicht löschen. Auch dies ersetzt noch kein externes Backup.
 
@@ -88,3 +88,28 @@ NGINX entfernt für Futter das Präfix `/futter/` vor der Weiterleitung an Port 
 ## Login-Bremse
 
 Höchstens drei fehlgeschlagene Login-Anfragen pro IP in einem 15-Minuten-Fenster. Danach HTTP 429 mit Retry-After und Wartezeit im UI; erfolgreiche Logins zählen nicht mit. IP-Erkennung über den Loopback-Proxy: NGINX ersetzt X-Forwarded-For durch die tatsächliche Client-IP. Bestehende Sessions bleiben nutzbar; kein globales Haushalt-Lockout. Zähler liegen im RAM und werden beim Dienst-Neustart zurückgesetzt. Der Schutz begrenzt einzelne IPs, nicht verteilte Angriffe über viele IPs.
+
+
+## Netzwerkabschottung und Proxy-Limits
+
+- `deploy/futter-egress.nft` nach `/etc/futter/egress.nft` installieren (root, 0600); vor Anwendung `id -u futter` mit der fest eingetragenen UID 999 vergleichen. Bei anderen Hosts UID ausdrücklich anpassen.
+- `deploy/futter-egress.service` nach `/etc/systemd/system/futter-egress.service` übernehmen. `futter.service` verlangt diesen Dienst und startet erst nach erfolgreichem Laden der Regeln. Die aktivierte Futter-Unit zieht die Egress-Unit auch beim Boot hoch; kein eigener Enable-Schritt nötig.
+- Die nft-Datei aktualisiert atomar ausschließlich die eigene Tabelle `inet futter_egress`. Antworten auf eingehende, etablierte Verbindungen dürfen passieren; alle von UID 999 selbst initiierten IP-Verbindungen werden verworfen/abgewiesen. IPv4 und IPv6 sind erfasst. Das schützt auch lokale Dienste und Metadaten-Endpunkte, nicht jedoch vor dem Abfluss eigener App-Daten über normale HTTP-Antworten im Fall einer kompromittierten App.
+- Niemals `flush ruleset` verwenden oder die unveränderte globale `nftables.service` aktivieren: Ihre Standardkonfiguration würde UFW-/Tailscale-Regeln entfernen. Ein Stop der Egress-Unit entfernt absichtlich keine Regeln. Änderungen mit `nft -c -f /etc/futter/egress.nft` prüfen, dann `systemctl reload futter-egress.service`.
+- Futter darf nur neue AF_INET-/AF_INET6-Sockets anlegen. Neue Unix-Sockets sind gesperrt, bestehende systemd-Log-FDs bleiben nutzbar. ProtectProc=invisible und zusätzliche Kernel-/Clock-/Hostname-/ABI-Härtungen sind aktiv. Asynchrones scrypt und SQLite unter diesen Einschränkungen getestet.
+- `deploy/nginx-limits.conf` als `/etc/nginx/conf.d/futter-limits.conf` in den http-Kontext installieren, zusammen mit der aktualisierten HTTPS-Site. Nach `nginx -t` NGINX neu laden.
+- Grenzwerte für `/futter/`: 20 Requests/s je IP (Burst 40); API zusätzlich 5/s (Burst 15); Login zusätzlich 6/min (Burst 5). Login-Regel gilt auch für Groß-/Kleinschreibung und abschließenden Slash. Proxy-Loginlimit zählt anders als die App auch erfolgreiche Anmeldungen mit. Die App behält drei Fehlversuche je IP / 15 Minuten.
+- Gleichzeitig höchstens 20 aktive Requests/Verbindungen je IP und 80 insgesamt für Futter. Header-/Body-Timeout 10s, Send-/Keepalive-Timeout 15s. Edge-Limits liefern JSON-429, no-store und Retry-After=10; keine Haushaltsdaten im Fehlertext.
+- Prüfskript: `python3 test/nginx-limits.py` (lokales NGINX erforderlich). Verwendet ausschließlich einen isolierten Dummy-Backendprozess und eine separate NGINX-Instanz, keine echten Haushaltsdaten und keine echten Login-Sperren.
+
+### Funktionsprüfung und Rückkehr
+
+Nach Installation NGINX-Login/Logout und normalen Planabruf über HTTPS prüfen, dann fehlgeschlagene Verbindungen unter UID `futter` zu lokalen und externen IP-Zielen mit einem erhöhten Reject-Zähler in der eigenen nft-Tabelle belegen. Ein Timeout allein reicht nicht als Nachweis. Effektive Mounts, UID und Capabilities des echten Dienstes prüfen. Es wurde kein Host-Reboot für diese Änderung durchgeführt; Boot-Abhängigkeit ist konfiguriert und verifiziert.
+
+Vor Änderungen Unit, Site, UFW-Status und nft-Regeln root-geschützt sichern. Im Fehlerfall Futter stoppen, vorherige App-Unit und Site wiederherstellen, den neuen NGINX-Limits-Include nur zusammen mit der referenzfreien alten Site entfernen, daemon-reload ausführen und nginx -t prüfen. Die eigene Egress-Unit stoppen und ausschließlich `inet futter_egress` entfernen, wenn diese Einschränkung ebenfalls zurückgenommen werden soll. Danach NGINX laden und Futter starten; nie fremde Firewall-Tabellen zurücksetzen.
+
+### Mehrere Apps und verbleibende Entscheidungen
+
+Pfad-Trennung ist nur Routing, keine Browser-Isolation. Ein Fehler in einer zweiten App derselben Origin könnte Futter im angemeldeten Browser mitbenutzen. Für eine echte Vertrauensgrenze separate Hostnamen mit hostgebundenen Cookies oder andere IPs verwenden; Ports allein isolieren Cookies nicht. Keine zweite App wurde für diese Härtung veröffentlicht.
+
+SSH-Passwortanmeldung bleibt bis zur Bestätigung eines funktionierenden Schlüsselzugangs unverändert. Externe, verschlüsselte Backups brauchen ein benanntes Ziel; lokale geschützte Sicherungen bleiben aktiv. Keine neue Domain, kein externes Backupziel und kein neues Passwort wurden ohne Vorgabe angelegt.

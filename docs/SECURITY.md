@@ -1,4 +1,4 @@
-# Sicherheitsstand nach Härtung · 17.11.2026
+# Sicherheitsstand nach Härtung · 18.11.2026
 
 ## Umgesetzt
 
@@ -19,7 +19,15 @@
 
 ## Offene Punkte
 
-- Entwicklungsabhängigkeit `picomatch@4.0.7`: GHSA-fc5q-39xc-vjpf (ReDoS), im Entwicklungsbaum über Vite, nicht im Produktionsbaum. Zum Prüfzeitpunkt ist auch die neueste Registry-Version 4.0.7 betroffen. Keine erzwungene Vite-Rückstufung; nach verfügbarer kompatibler Korrektur gezielt aktualisieren.
+- Aktuelle npm-Audits melden keine bekannten Schwachstellen. Das zuvor beobachtete picomatch-Advisory wird aktuell nicht mehr gemeldet; keine allgemeine Sicherheitsgarantie.
 - Backups sind weiterhin lokal auf demselben VPS, nicht extern repliziert.
 - Ein gemeinsames Haushaltspasswort, keine getrennten Benutzerkonten oder MFA. Das ist der bestätigte erste Produktumfang.
 - Der echte iPhone-Safari-Test bleibt von den automatisierten Chromium-Prüfungen getrennt.
+
+## Ergänzende Härtung vom 18.11.2026
+
+- Eigene nft-Tabelle sperrt neue IP-Verbindungen unter dem App-Benutzer; Antworten an den NGINX-Proxy bleiben erlaubt. Lokale Dienste, IPv6 und Metadaten-IP als blockiert verifiziert. Anwendung startet nur nach aktivierter Egress-Regel.
+- Neue AF_UNIX-Sockets gesperrt, ProtectProc und weitere geeignete systemd-Schutzoptionen aktiviert. Tatsächliche Sandbox und laufende Anmeldung nach Änderung geprüft.
+- Vorgelagerte NGINX-Limits für alle Futter-Anfragen, API und Login, zusätzlich Verbindungsgrenzen und kurze Timeouts. Isolierte Bursttests bestanden; keine Testsperren echter Logins erzeugt.
+- Gemeinsame Browser-Origin bei mehreren Slash-Apps bleibt eine bewusste Einschränkung, keine Sicherheitsisolation. Vor weiteren Apps Vertrauensgrenzen klären.
+- Öffentliches SSH mit Passwort bleibt bis bestätigtem Schlüsselzugang unverändert. Externes Backupziel steht noch aus. Keine OpenClaw-Updates oder unbestellten Domain-/Zugangsumstellungen vorgenommen.

@@ -1,0 +1,11 @@
+# Own table only: never flush the host/UFW/Tailscale ruleset.
+# UID 999 is the dedicated futter account on this host.
+add table inet futter_egress
+flush table inet futter_egress
+table inet futter_egress {
+    chain output {
+        type filter hook output priority 10; policy accept;
+        meta skuid 999 ct direction reply ct state established,related counter accept
+        meta skuid 999 counter reject with icmpx type admin-prohibited
+    }
+}

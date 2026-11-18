@@ -47,3 +47,13 @@ Die Tests verwenden isolierte Testdaten, keine echten Haushaltsdaten. Kein echte
 ## Login rate limit
 
 14/14 tests passed. Three failed logins block further logins (including the correct password) with HTTP 429 and Retry-After <=900 seconds; successful logins do not consume the limit. Forged forwarding headers do not bypass the direct-app limiter. Live prefixed HTTPS login/logout and advertised rate policy q=3/w=900 verified without failed live attempts or household writes.
+
+## Additional service/network hardening (18.11.2026)
+
+- Isolated stricter systemd runtime: SQLite, asynchronous scrypt and local HTTP passed; newly created Unix sockets denied.
+- Isolated NGINX login/API bursts: normal requests pass; case/trailing-slash login variants share the limit; rejected requests return JSON 429 + Retry-After + no-store.
+- Live HTTPS login/logout and authenticated views passed without household writes after installing the new service and firewall rules.
+- UID 999 connections to local other-app/gateway ports, public HTTP, IPv6 loopback and metadata IP failed, each with an increment of the dedicated nft reject counter. IPv6 may time out rather than returning immediate errno; the counter confirmed the relevant rule.
+- Other nft tables and the original UFW policy preserved. Repeated egress-unit reload retained exactly one owned ruleset. Active app UID 999, CapEff=0, NoNewPrivs=1, Seccomp=2, read-only root and hidden home verified. Boot ordering requires the egress unit; no full reboot was performed.
+
+- Two targeted Ubuntu security updates installed without removals or host reboot: needrestart 3.6-7ubuntu4.6 and libgstreamer1.0-0 1.24.2-1ubuntu0.2. PackageKit restarted only after confirming no active transactions. apt-get check / dpkg --audit clean; no reboot marker. Snap has no pending refresh; Homebrew reports no outdated packages against its existing local catalog.

@@ -1,6 +1,7 @@
 [Unit]
 Description=Futter private dinner planner
-After=network.target
+After=network.target futter-egress.service
+Requires=futter-egress.service
 
 [Service]
 Type=simple
@@ -27,7 +28,15 @@ RestrictNamespaces=yes
 ProtectKernelTunables=yes
 ProtectKernelModules=yes
 ProtectControlGroups=yes
-RestrictAddressFamilies=AF_INET AF_INET6 AF_UNIX
+RestrictAddressFamilies=AF_INET AF_INET6
+ProtectProc=invisible
+ProtectKernelLogs=yes
+ProtectClock=yes
+ProtectHostname=yes
+LockPersonality=yes
+RestrictRealtime=yes
+RemoveIPC=yes
+SystemCallArchitectures=native
 MemoryMax=256M
 TasksMax=64
 CPUQuota=100%
